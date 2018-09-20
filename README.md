@@ -3,7 +3,7 @@ This Javascript must be run within imageJ/Fiji.
 It creates a montage image where cells identified in microscopy images (saved as ROIs) are extracted and arrayed on a grid.
 
 
-*** Format of the screen definition file  ***
+### Format of the screen definition file
 To apply our script to your images, a tabulated file (TSV or CSV format) with the following fields (columns) is required.
 The first row should start with a hashtag sign ("#") followed by the name of the required fields :
 
@@ -19,7 +19,7 @@ The last fields must contain full paths to the images and should correspond to t
 If several images were acquired per well, you can add as many rows as needed as long as the "plate", "well" and "orf" fields are duplicated. If you have missing images, the fields may be left blank or indicated by "NA" (i.e. not available).
 
 
-*Pseudo-Algorithm:*
+###Pseudo-Algorithm
 
     STATUS=initGlobalVariables
     MONTAGE=setMontageParameters
