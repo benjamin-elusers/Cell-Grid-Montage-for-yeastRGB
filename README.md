@@ -2,18 +2,6 @@
 This Javascript must be run within imageJ/Fiji. 
 It creates a montage image where cells identified in microscopy images (saved as ROIs) are extracted and arrayed on a grid.
 
-If you wish to upload your own microscopy screens to yeastRGB.org, please follow these guided instructions.
-**Implortantly, the image processing script will require ALREADY identified cells or cell centers in your images (saved as ROIs).** 
-
-Send an email at benjamin.dubreuil@weizmann.ac.il with the following information :
-
-
-* Corresponding email address to be mentioned on the web-site,
-* Authors names,
-* Screen name (less than 15 characters),
-* Publication reference(s)
-* Strain genotype and condition in which it was imaged,
-* Microscopy screen definition file (detailed below)
 
 *** Format of the screen definition file  ***
 To apply our script to your images, a tabulated file (TSV or CSV format) with the following fields (columns) is required.
@@ -61,3 +49,21 @@ If several images were acquired per well, you can add as many rows as needed as 
                                set COPY = false
                   else
                       3.b) skip to next rowInput
+
+
+
+-----
+
+
+If you wish to upload your own microscopy screens to yeastRGB.org, please follow these guided instructions.
+**Implortantly, the image processing script will require ALREADY identified cells or cell centers in your images (saved as ROIs).** 
+
+Send an email at benjamin.dubreuil@weizmann.ac.il with the following information :
+
+
+* Corresponding email address to be mentioned on the web-site,
+* Authors names,
+* Screen name (less than 15 characters),
+* Publication reference(s)
+* Strain genotype and condition in which it was imaged,
+* Microscopy screen definition file (detailed below)
