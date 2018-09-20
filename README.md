@@ -9,15 +9,6 @@ The first row should start with a hashtag sign ("#") followed by the name of the
 
 `#plate,well,orf,c0,c1,c2,c3`
 
-Example:
-
- #plate | well | orf | c0 | c1 | c2 | c3 |
--------|------|-----|----|----|----|----|
-plate1 | A01  | YAL002W | screen-brightfield-00001.tif | screen-GFP-00001.tif | screen-RFP-00001.tif | screen-BFP-00001.tif |
-plate1 | A01  | YAL002W | screen-brightfield-00002.tif | screen-GFP-00002.tif | screen-RFP-00002.tif | screen-BFP-00002.tif |
-....
-plate1 | P24  | NA | NA | NA | NA | NA |
-
 1. *plate* gives the number of the 384 well plate from which images were acquired (for a proteome-wide screen, this typically ranges from 1 to 16).
 2. *well* id must be 3 characters long starting from A01 to P24 (it should be 384 wells exactly).
 3. *orf* must contain an uppercase identifier for the gene locus tagged.
@@ -26,6 +17,15 @@ plate1 | P24  | NA | NA | NA | NA | NA |
 5. *c1* must contain full path to the images corresponding to the first fluorescent channel.<sup>[1](#channelFootnote)</sup>
 6. *c2* must contain full path to the images corresponding to the second fluorescent channel (if available, set to NA otherwise).<sup>[1](#channelFootnote)</sup>
 7. *c3* must contain full path to the images corresponding to the third fluorescent channel (if available, set to NA otherwise).<sup>[1](#channelFootnote)</sup>
+
+Example:
+
+ #plate | well | orf | c0 | c1 | c2 | c3 |
+-------|------|-----|----|----|----|----|
+plate1 | A01  | YAL002W | screen-brightfield-00001.tif | screen-GFP-00001.tif | screen-RFP-00001.tif | screen-BFP-00001.tif |
+plate1 | A01  | YAL002W | screen-brightfield-00002.tif | screen-GFP-00002.tif | screen-RFP-00002.tif | screen-BFP-00002.tif |
+....
+plate1 | P24  | NA | NA | NA | NA | NA |
 
 ###### <a name="channelFootnote"><sup>1</sup></a> The fields corresponding to channels (c0,c1,c2,c3) must contain full paths to the images and should correspond to the plate, well and orf written. If several images were acquired per well, you can add as many rows as needed as long as the "plate", "well" and "orf" fields are duplicated (*cf* example above).If you have missing images, the fields may be left blank or indicated by "NA" (i.e. not available).
 
