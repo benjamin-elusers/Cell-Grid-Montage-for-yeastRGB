@@ -19,13 +19,15 @@ The last fields must contain full paths to the images and should correspond to t
 If several images were acquired per well, you can add as many rows as needed as long as the "plate", "well" and "orf" fields are duplicated. If you have missing images, the fields may be left blank or indicated by "NA" (i.e. not available).
 
 
-###Pseudo-Algorithm
-
-    STATUS=initGlobalVariables
-    MONTAGE=setMontageParameters
-
-    If first row is : plate well orf c0 c1 c2 c3
-    Load input.tsv
+### Pseudo-Algorithm
+    initialize ImageJ
+    STATUS  = initialize global variables
+    MONTAGE = set Montage Parameters
+    FIELDS = read and split first row of **input.tsv**
+    if FIELDS corresponds to : plate well orf c0 c1 c2 c3
+        Load input.tsv
+    else
+        exit("Input file is invalid.")
 
     For each rowInput:
 
