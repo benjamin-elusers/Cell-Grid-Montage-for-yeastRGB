@@ -20,29 +20,30 @@ The first row should start with a hashtag sign ("#") followed by the name of the
 
 *Pseudo-Algorithm:*
 
+    STATUS=initGlobalVariables
+    MONTAGE=setMontageParameters
 
-STATUS=initGlobalVariables
-MONTAGE=setMontageParameters
-Load input.tsv
-If columns are : plate well orf c0 c1 c2 c3
+    If first row is : plate well orf c0 c1 c2 c3
+    Load input.tsv
 
-For each rowInput:
-    0. Check if well has been visited
-       if FALSE :
-          update STATUS (picnum reset to 1, get well position on plate)
-          createImage GRID for each channel
+    For each rowInput:
 
-    1. Get detected cells in segmented image (channel c0) in Array of Cell Objects (CELLS)
-       if CELLS length is 0 :
-          skip to next rowInput
-       else
-          For each channel ( c0 c1 c2 c3 )
-              open Image Channel
-              if( COPY == true)
-                  2.a) copy ROI from CELLS from ImageChannel to corresponding Image GRID
-                       if CopiedCells == MaxCellPerWell
-                           save Image GRID as TIFF with Labels
-                           close Image GRID
-                           set COPY = false
-              else
-                  2.b) skip to next rowInput
+        1. Check if well has been visited
+           if FALSE :
+              update STATUS (picnum reset to 1, get well position on plate)
+              createImage GRID for each channel
+    
+        2. Get detected cells in segmented image (channel c0) in Array of Cell Objects (CELLS)
+           if CELLS length is 0 :
+              skip to next rowInput
+           else
+              For each channel ( c0 c1 c2 c3 )
+                  open Image Channel
+                  if( COPY == true)
+                      3.a) copy ROI from CELLS from ImageChannel to corresponding Image GRID
+                           if CopiedCells == MaxCellPerWell
+                               save Image GRID as TIFF with Labels
+                               close Image GRID
+                               set COPY = false
+                  else
+                      3.b) skip to next rowInput
