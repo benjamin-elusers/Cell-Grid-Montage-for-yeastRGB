@@ -25,32 +25,42 @@ If several images were acquired per well, you can add as many rows as needed as 
     MONTAGE = set Montage Parameters
     FIELDS = read and split first row of **input.tsv**
     if FIELDS corresponds to : plate well orf c0 c1 c2 c3
-        Load input.tsv
+        INPUT = load **input.tsv**
     else
         exit("Input file is invalid.")
 
-    For each rowInput:
+    For each rowInput in INPUT:
 
         1. Check if well has been visited
            if FALSE :
               update STATUS (picnum reset to 1, get well position on plate)
-              createImage GRID for each channel
+              GRIDIMG = create grid image for each channel
     
         2. Get detected cells in segmented image (channel c0) in Array of Cell Objects (CELLS)
            if CELLS length is 0 :
               skip to next rowInput
            else
-              For each channel ( c0 c1 c2 c3 )
-                  open Image Channel
-                  if( COPY == true)
-                      3.a) copy ROI from CELLS from ImageChannel to corresponding Image GRID
-                           if CopiedCells == MaxCellPerWell
-                               save Image GRID as TIFF with Labels
-                               close Image GRID
-                               set COPY = false
+              For each CHANNEL ( c0 c1 c2 c3 )
+                  if STATUS->PlateMontage == TRUE and STATUS->FIRSTWELL == TRUE
+                      PLATEIMG = create 384-wellplate montage image
+
+                  CHIMG = open image from CHANNEL
+                  
+                  if STATUS->Copy == TRUE
+                      3.a) copy ROI from CELLS from CHIMG to corresponding GRIDIMG
+                           if STATUS->CopiedCells == MONTAGE->MaxCellPerWell
+                               save GRIDIMG as TIFF with labels
+                               set STATUS->Copy to FALSE
                   else
                       3.b) skip to next rowInput
+              end of CHANNEL loop
+    
+         if STATUS->PlateMontage == TRUE
+             4. Copy GRIDIMG to PLATEIMG at well position on plate
+             
+         close GRIDIMG
 
+     end of INPUT loop
 
 
 -----
