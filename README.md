@@ -84,4 +84,7 @@ Send an email at benjamin.dubreuil@weizmann.ac.il with the following informati
 * Screen name (less than 15 characters),
 * Publication reference(s)
 * Strain genotype and condition in which it was imaged,
-* Microscopy screen definition file (detailed below)
+* Microscopy screen definition file (detailed above)
+
+
+
