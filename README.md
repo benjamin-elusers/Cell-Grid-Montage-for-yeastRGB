@@ -17,13 +17,15 @@ plate1 | P24  | NA | NA | NA | NA | NA |
 1. *plate* gives the number of the 384 well plate from which images were acquired (for a proteome-wide screen, this typically ranges from 1 to 16).
 2. *well* id must be 3 characters long starting from A01 to P24 (it should be 384 wells exactly).
 3. *orf* must contain an uppercase identifier for the gene locus tagged.
-4. *c0* must contain full path to the images containing segmentation information. ROIs must be saved as overlays and the images should be in OME-TIFF file format.
-5. *c1* must contain full path to the images corresponding to the first fluorescent channel.
-6. *c2* must contain full path to the images corresponding to the second fluorescent channel (if available, set to NA otherwise).
-7. *c3* must contain full path to the images corresponding to the third fluorescent channel (if available, set to NA otherwise).
 
-The last fields must contain full paths to the images and should correspond to the plate, well and orf written. 
-If several images were acquired per well, you can add as many rows as needed as long as the "plate", "well" and "orf" fields are duplicated. If you have missing images, the fields may be left blank or indicated by "NA" (i.e. not available).
+4. *c0* must contain full path to the images containing segmentation information. ROIs must be saved as overlays and the images should be in OME-TIFF file format.<sup>[1](#channelFootnote)</sup>
+5. *c1* must contain full path to the images corresponding to the first fluorescent channel.<sup>[1](#channelFootnote)</sup>
+6. *c2* must contain full path to the images corresponding to the second fluorescent channel (if available, set to NA otherwise).<sup>[1](#channelFootnote)</sup>
+7. *c3* must contain full path to the images corresponding to the third fluorescent channel (if available, set to NA otherwise).<sup>[1](#channelFootnote)</sup>
+
+<a name="myfootnote1">1</a>:
+The fields corresponding to channels (c0,c1,c2,c3) must contain full paths to the images and should correspond to the plate, well and orf written. 
+If several images were acquired per well, you can add as many rows as needed as long as the "plate", "well" and "orf" fields are duplicated (*cf* example above). If you have missing images, the fields may be left blank or indicated by "NA" (i.e. not available).
 
 
 ### Pseudo-Algorithm
