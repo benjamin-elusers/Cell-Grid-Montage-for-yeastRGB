@@ -20,6 +20,7 @@ The first row should start with a hashtag sign ("#") followed by the name of the
 
 *Pseudo-Algorithm:*
 
+
 STATUS=initGlobalVariables
 MONTAGE=setMontageParameters
 Load input.tsv
