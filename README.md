@@ -24,9 +24,7 @@ plate1 | P24  | NA | NA | NA | NA | NA |
 7. *c3* must contain full path to the images corresponding to the third fluorescent channel (if available, set to NA otherwise).<sup>[1](#channelFootnote)</sup>
 
 <a name="channelFootnote"><sup>1</sup></a>
-###### The fields corresponding to channels (c0,c1,c2,c3) must contain full paths to the images and should correspond to the plate, well and orf written. 
-###### If several images were acquired per well, you can add as many rows as needed as long as the "plate", "well" and "orf" fields are duplicated (*cf* example above).
-###### If you have missing images, the fields may be left blank or indicated by "NA" (i.e. not available).
+###### The fields corresponding to channels (c0,c1,c2,c3) must contain full paths to the images and should correspond to the plate, well and orf written. If several images were acquired per well, you can add as many rows as needed as long as the "plate", "well" and "orf" fields are duplicated (*cf* example above).If you have missing images, the fields may be left blank or indicated by "NA" (i.e. not available).
 
 
 ### Pseudo-Algorithm
