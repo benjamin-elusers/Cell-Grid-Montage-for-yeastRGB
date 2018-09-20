@@ -1,3 +1,19 @@
+/* Author  : Benjamin Dubreuil
+ * Date    : 20 Sept. 2018 
+ * Project : YeastRGB - Cell Grid Montage (v4.1)
+ */
+
+///---------------------------- USEFUL VARIABLES ----------------------------///
+LETTERS     = new Array("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P");  // to define 384 plate
+COLS        = new Array("01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24");
+sharp = '#';
+star  = '*';
+dash  = '-';
+equal = '=';
+space = ' ';
+FILESEP	= "/"; // change to "\" if using windows I guess
+ 
+///---------------------------- FUNCTIONS ----------------------------///
  IJSetup = function(){
 	importClass(Packages.ij.IJ);
 	importClass(Packages.ij.plugin.frame.RoiManager);
@@ -37,20 +53,8 @@
 	IJ.setPasteMode("Copy");
 	RM = RoiManager(true);// initiating the ROI manager in hidden mode.
 	if (RM==null){ IJ.error("ROI Manager is not found"); }
+	// activate batchmode (= setBatchMode(true) in IJ macro)
 	MACRO.batchMode = true;
-}
-IJSetup();
-
-function getPercentile(Percentile,pixArr){ // Why are you passing ip, imp and selROI if you are not using them ??? BD
-	// This function takes a percentile value, an ROI object, the image processer object,the image plus object and the sorted pixel array.
-	// It returns the corresponding grayvalue for the given percentile. If it's 50%, it will return the median gravalue.
-    var N = pixArr.length;
-	var Arr = new Array;
-	for(var i=0; i<pixArr.length; i++){ Arr[i] = pixArr[i]; }
-	Arr.sort(function(a,b){ return(a-b) }); 
-    var iRank = Math.round((Percentile/100)*(N+1));
-    if(Percentile==100){ iRank = N - 1;	}
-    return Arr[iRank];
 }
 
 function cell() { 
@@ -65,48 +69,6 @@ function cell() {
     this.toString = function () {
 		IJ.log("idx: " + this.idx +" ROIobj: " + this.ROIobj + " , area: " + this.area + " , xVal: " + this.x + " , yVal: " + this.y +" type: " + this.type); 
     }
-
-    this.getAllPercentiles = function(pixArr){
-		// This function takes an ROI object, the image processer object, the image plus object and the sorted Roi pixel array.
-		// It fills up the cell array fields for the fluorescence bins, from the 100th grayvalue percentile to the 0th percentile.
-		this.b0f = getPercentile(100,pixArr); // The brightest pixel
-    	this.b1f = getPercentile(90,pixArr);
-		this.b2f = getPercentile(80,pixArr);
-		this.b3f = getPercentile(70,pixArr);
-		this.b4f = getPercentile(60,pixArr);
-		this.b5f = getPercentile(50,pixArr); // The median 
-		this.b6f = getPercentile(40,pixArr);
-		this.b7f = getPercentile(30,pixArr);
-		this.b8f = getPercentile(20,pixArr);
-		this.b9f = getPercentile(10,pixArr);
-		this.b10f = getPercentile(0,pixArr); // The darkest pixel
-	}
-
-	// get Pixels In ROI
-	// Displays the coordinates and values of the pixels within a non-rectangular ROI.
-	this.getpxROI = function(imp,ip){
-	  	imp.setRoi(this.ROIobj,false);
-	  	ip.setRoi(this.ROIobj);
-
-	  	PX = new MakePixelList();
-	
-	  	var mask = this.ROIobj!=null?this.ROIobj.getMask():null;
-	  	if (mask==null){ IJ.error("Non-rectangular ROI required"); }
-	  	var r = this.ROIobj.getBounds();
-
-	  	for (var y=0; y<r.height; y++) {
-		  	for (var x=0; x<r.width; x++) {
-		   		if (mask.getPixel(x,y)!=0){
-					PX.L++;
-					PX.X.push(r.x+x);
-					PX.Y.push(r.y+y);
-	        		PX.I.push(ip.getf(r.x+x,r.y+y));
-		   		}
-	    	}
-		}
-		//IJ.log("Number of pixels in ROI : " + PX.L);
-		return(PX);
-	}
 
 	this.getStats = function(imp,ip){
 		imp.setRoi(this.ROIobj, false);
@@ -126,71 +88,6 @@ function cell() {
 	}
 }
 
-function toManager(currentCell){
-    // This function takes the current cell object as an argument, and transfers the cell ROI object to the ROI manager.
-    RM.addRoi(currentCell.ROIobj);
-}
-
-// USEFUL VARIABLES
-LETTERS     = new Array("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P");  // to define 384 plate
-COLS        = new Array("01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24");
-sharp = '#';
-star  = '*';
-dash  = '-';
-equal = '=';
-space = ' ';
-FILESEP	= "/"; // change to "\" if using windows I guess
-
-// returns true if the object passed is an integer
-function isInt(n){ return Number(n) === n && n % 1 === 0; }
-// returns true if the object passed is a float
-function isFloat(n){ return Number(n) === n && n % 1 !== 0; }
-// returns true if value is numeric and false if it is not.
-function isNumeric(value) {
-	var RegExp = /^(-)?(\d*)(\.?)(\d*)$/; 
-	return String(value).match(RegExp);
-}
-function isUndefined(value){
-    var undefined = void(0); // Obtain `undefined` value (even if undefined was re-assigned)
-    return value === undefined;
-}
-function isEmpty(str) { return str === ''; }
-function notEmpty(str) { return str !== ''; }
-function isDefinedArray(Arr) {
-  for (var i = 0; i < Arr.length; i++) {
-    if( isUndefined(Arr[i]) && Arr[i] == null ){ return false; }
-  }
-  return true;
-}
-function isNumericArray(Arr) {
-  for (var i = 0; i < Arr.length; i++){ return isNumeric(Arr[i]); }
-  return true;
-}
-
-function addArray(Arr1, Arr2){ 
-	if(A.length!==B.length){ throw new Error("Cannot operate arrays of different lengths"); }
-	var res = new Array();
-	for (var i = 0; i < Arr1.length; i++){ res.push(Arr1[i]+Arr2[i]) }
-	return res;
-}
-function subtractArray(Arr1, Arr2){
-	if(Arr1.length!==Arr2.length){ throw new Error("Cannot operate arrays of different lengths"); }
-	var res = new Array();
-	for (var i = 0; i < Arr1.length; i++){ res.push(Arr1[i]-Arr2[i]) }
-	return res;
-}
-function productArray(Arr1, Arr2){
-	if(Arr1.length!==Arr2.length){ throw new Error("Cannot operate arrays of different lengths"); }
-	var res = new Array();
-	for (var i = 0; i < Arr1.length; i++){ res.push(Arr1[i]*Arr2[i]) }
-	return res;
-}
-function divArray(Arr1, Arr2){
-	if(Arr1.length!==Arr2.length){ throw new Error("Cannot operate arrays of different lengths"); }
-	var res = new Array();
-	for (var i = 0; i < Arr1.length; i++){ res.push(Arr1[i]/Arr2[i]) }
-	return res;
-}
 function sortArr(Arr,asc){
 	var sorted = Arr.slice(0);
 	if( asc === undefined ){
@@ -268,7 +165,6 @@ String.prototype.repeat = function(count) {
     return rpt;
 }
 
-
 Array.prototype.indexOf = function indexOf(member, startFrom) {
     /*
     In non-strict mode, if the `this` variable is null or undefined, then it is set to the window object.
@@ -299,8 +195,6 @@ Array.prototype.indexOf = function indexOf(member, startFrom) {
 	return -1;
 }
 
-function precision(x, digits){ return parseFloat(x.toFixed(digits)) }
-function increment(val,delta){ return(val+delta) }
 function seqD(start,end,delta){
 	var Arr = new Array();
 	if(delta == 0 ){ return(Arr) }
@@ -335,32 +229,6 @@ function subset(Arr,ind){
 }
 //print(subset(vec,ivec));
 
-function mapArray(fn,Arr) {
-	var Arr2 = new Array();
-	for (var i = 0; i < Arr.length; i++){ Arr2.push(fn(Arr[i])); }
-	return Arr2;
-}
-
-function filter(Arr,val){
-	var res = {};
-	res['gt']=0;
-	res['lt']=0;
-	res['eq']=0;
-	res['max']=-1;
-	res['min']=1000000000;
-	for (var i = 0; i < Arr.length; i++){ 
-		if( Arr[i] > res['max'] ){ res['max'] = Arr[i]; }
-		if( Arr[i] < res['min'] ){ res['min'] = Arr[i]; }
-		if( Arr[i] > val ){ res['gt'] += 1;  }
-		if( Arr[i] < val ){ res['lt'] += 1;  }
-		if( Arr[i] == val ){ res['eq'] += 1; }
-	}
-	res['ge'] = res['gt'] + res['eq'];
-	res['le'] = res['lt'] + res['eq'];
-	res['ne'] = Arr.length - res['eq'];
-	return(res);
-}
-
 function dirname(str, sep){ return str.substr(0,str.lastIndexOf(sep)); }
 function basename(str, sep){ return str.substr(str.lastIndexOf(sep) + 1); }
 function stripext(str) { return str.substr(0,str.lastIndexOf('.')); }
@@ -373,7 +241,9 @@ function getext(str) { return str.substr(str.lastIndexOf('.')+1); }
 
 function initMontageParams(){
 	var M={};
+	M['makePLATE']    = false;
 	M['skipFIRSTPIC'] = false;
+
 	M['BITMODE']      = '8-bit';
 	M['BACKGROUND']   = 'black';
 	M['PICPERWELL']   = 8;
@@ -516,7 +386,6 @@ function Well2pos(w,M,debug){
 }
 //IJ.log("EXAMPLE Well2pos('A01',MONTAGE)");
 //IJ.log(Dumper(Well2pos("A01",MONTAGE)));
-
 function getSNUM(wROW,wCOL,M){
 	var myNUM = (wROW-1) * M['PLATECOLS'] * M['PICPERWELL'];
 	if( wROW % 2 == 0 ){ // Left-to-right on even rows (0,2,4,6... => A,C,E,G..)
@@ -534,8 +403,8 @@ function tabRow (idx,P,W,O,C0,C1) {
   this.orf =  String(O);
   this.c0 = File(C0);
   this.c1 = File(C1);
-  this.c2 = null;
-  this.c3 = null;
+  this.c2 = File(null);
+  this.c3 = File(null);
 }
 
 function tabRow (idx,P,W,O,C0,C1,C2) {
@@ -546,7 +415,7 @@ function tabRow (idx,P,W,O,C0,C1,C2) {
   this.c0 = File(C0);
   this.c1 = File(C1);
   this.c2 = File(C2);
-  this.c3 = null;
+  this.c3 = File(null);
 }
 
 function tabRow (idx,P,W,O,C0,C1,C2,C3) {
@@ -565,16 +434,21 @@ tabRow.prototype.toString = function tabRow2String() {
   return ret;
 }
 
-
 function openTable(filepath,sep,header){
+	//IJ.log("Opening tabulated file : ");
+	//IJ.log(filepath);
 	var fileContent = IJ.openAsString(filepath);
 	var lines = fileContent.split("\n");
 	
-	var names = seqL(1,lines[0].split(sep).length);
+	var names = seqD(1,lines[0].split(sep).length,1);
+	//IJ.log("Default column names : "+names);
 	if(header==true){  names = lines[0].split(sep); }
 	var table = new Array();
-	IJ.log("Columns of tabulated file are : "+names.join(' ')+' ncol='+names.length);
-	for( var n=0+(header==true); n<30; n++){
+	IJ.log("Columns of tabulated file are : "+names.join(' '));
+
+	var input = {};
+	input['fields'] = names;
+	for( var n=0+(header==true); n<lines.length; n++){
 		columns = lines[n].split(sep);
 		record = new tabRow(n,columns[0],columns[1].toString(),columns[2],columns[3],columns[4],columns[5],columns[6]);
 //		for( var c=0; c<names.length; c++ ){
@@ -583,152 +457,10 @@ function openTable(filepath,sep,header){
 		table.push(record);
 	}
 	IJ.log("Tabulated file contained "+(lines.length-header)+" lines with data (except header)");
-	return(table);
+	input['data'] = table;
+	return(input);
 }
 	
-//IJ.log("EXAMPLE getSNUM(10,18,MONTAGE)");
-//IJ.log(Dumper(getSNUM(10,18,MONTAGE)));
-
-MONTAGE=initMontageParams();
-// activate batchmode (= setBatchMode(true) in IJ macro)
-
-///------------------------------------------------USER INPUT------------------------------------------------///
-PARAMFILE = "/media/elusers/users/benjamin/A-PROJECTS/01_PhD/04-image-analysis/JS4Fiji/input-for-cell-grid-montage.tsv"; // ARGV[0]
-IJ.log('PARAMFILE '+PARAMFILE);
-OUTPATH   = "/media/elusers/users/benjamin/A-PROJECTS/01_PhD/04-image-analysis/JS4Fiji/"; // ARGV[1] or dirname(ARGV[0])
-IJ.log('OUTPATH '+ OUTPATH);
-OUTDIR = dirname(OUTPATH,'/');
-IJ.log('OUTDIR '+ OUTDIR);
-SCREENNAME = 'test-cellgrid';
-INPUT=openTable(PARAMFILE,'\t',true);
-//IJ.log('example Row=1');
-//row1 = INPUT[0];
-//IJ.log(row1.toString());
-
-///INPUT/// FINALLY YOU NEED TO DEFINE THE LUT, WHICH CORRESPONDS TO THE COLORSPACE THAT NEEDS TO BE USED TO REPRESENT INTENSITIES (for example RFP is displayed as red pixels)
-LUT=new Array("Grays","Green","Red","Cyan");
-
-///....NOT ACTIVE....///
-///INPUT/// YOU NEED TO DEFINE THE PATH FOR THE LIST OF SELECTED CELLS IN EACH PICTURE OF THE PLATE
-//SELFILE = "/media/elusers/users/benjamin/A-PROJECTS/01_PhD/04-image-analysis/JS4Fiji/plate_1-SELECTED-CELLID-SNUM.JSON"; // undefined; //path2project + "plate_"+PLATENUM+"/"+PLATENAME+"-SELECTED-CELLID-SNUM.JSON"
-
-		// READ FILE WITH LIST OF SELECTED CELLS IN EACH SEGMENTED IMAGE
-		/// var SELECTION  = getCellSelection(SELFILE); ///
-/*	
-		var SELECTION = seqD(0,STATUS['NCELLS'],1);
-		var NOSEL=false;
-		if( SELFILE !== undefined && File(SELFILE).exists ){
-			IJ.log("(1.b) Filter selected cells for current well");
-			// Get Selected ROI number
-			if( CELLID === undefined || CELLID[irow] === undefined){
-				IJ.log("NO SELECTION OF CELLS !");
-				NOSEL=true;
-			}else if(CELLID[irow] !== undefined){
-				IJ.log("FOUND SELECTION OF CELLS !");
-				SELECTION = CELLID[irow];
-				NOSEL=false;
-				IJ.log("SELECTED CELLS ID (n="+SELECTION.length+") : "+SELECTION);
-			}
-		}	
-		var nsel = SELECTION.length;
-*/
-
-
-/*	    	if( sel !== -1 ){
-	    		//IJ.log(" selected i="+sel+" "+SEL[sel]);
-	    		//IJ.log(ROInum+" "+test);
-	    		//IJ.log("ROInum="+ROInum+" => THIS IS A SELECTED CELL");
-	    		KEEP.push(SEL[sel]);
-		    	if( Cell.area > minCELLAREA && Cell.area < maxCELLAREA){
-		    		CELLS.push(Cell);
-		    		nkept++;
-		    	}else{
-		    		nsmall++;
-		    	}
-	    	}else{
-	    		nextra++;
-	    		//IJ.log("ROInum="+ROInum+" => NOT A SELECTED CELL");
-	    		CELLS.unshift(Cell);
-	    	}
-	  	}
-
-	
-		ONLYSELECTED = false;
-		if( ONLYSELECTED && NOSEL){
-			IJ.log("...ONLY SELECTED CELLS...");
-			IJ.log("No SELECTED cells in image ...skipping to next image...");
-	    	STATUS['picno']++; 
-	   		continue;
-		}
-	
-	  	// Get the number of cells and filter selected cells
-		var iSEL = seqL(0,STATUS['NCELLS'],MONTAGE['CELLPERPIC']);
-		if( NOSEL ){ 
-	  		IJ.log("TOTAL NUMBER OF CELLS IN IMAGE : "+STATUS['NCELLS']+" returned overlays ("+nsel+")");
-		}else{
-	  		IJ.log("TOTAL NUMBER OF CELLS IN IMAGE : "+STATUS['NCELLS']+"  returned overlays | "+nsel+" selected overlays");
-			iSEL = seqL(0,nsel,MONTAGE['CELLPERPIC']);
-	  	}
-		var SEL = subset(SELECTION,iSEL);
-	  	IJ.log("KEPT CELLS IDs (n="+SEL.length+") : "+SEL+" (SELECTION = "+!NOSEL+")");
-		IJ.log("indexes : "+iSEL);
-	
-		IJ.log("+++ TOTAL CELL COPIED (so far) : "+STATUS['CELLCOPIED']+" +++");
-		STATUS['NCELLS'] += STATUS['NCELLS'] - nsel;
-		
-	  	// STORE OVERLAYS AS AN ARRAY WITH THEIR x/y COORDINATES ON BF image (and their area)
-	  	
-	  	var nsmall=0;
-	  	var nkept=0;
-	  	var nrejected=0;
-	  	var nextra=0;
-	  	//for( var iov=0; iov < nover; iov++){
-	  	//	var ov = OVERLAYS.get(iov);
-	  	//	IJ.log("i="+iov+" overlay "+ov);
-	  	//}
-	  	
-	  	
-		IJ.log(" --> "+KEEP.length+" selected overlays ["+KEEP.join(", ")+"]");
-		IJ.log(" -----> "+nkept+" valid overlays");
-		IJ.log(" -----> "+nsmall+" abnormal-sized overlays excluded ( "+maxCELLAREA+" > area > "+minCELLAREA+" px)");	
-		//space.repeat(50);
-		//IJ.log(" --> "+DROP.length+" rejected overlays ( ["+DROP.join(", ")+"] discarded in selection)");	
-	  	STATUS['NCELLS_KEPT'] += nkept;
-
-///....NOT ACTIVE....///
-*/
-
-///INPUT/// HERE IS THE OUPTUT DIRECTORY FOR THE MONTAGE IMAGE
-var MontageFolder = File(OUTDIR);
-if(!MontageFolder.exists()){ 
-	IJ.log("====> Output directory does not exist!");
-	IJ.log("Creating directory '"+OUTDIR+"'...");
-	MontageFolder.mkdir();
-}
-
-IMGTYPE     = "8-bit";
-name  = SCREENNAME + "_" + IMGTYPE;
-MONTAGEtype  = IMGTYPE + " black";
-///INPUT/// HERE INDICATE HOW MANY PICTURES WERE TAKEN PER WELL
-PICPERWELL  = 8;
-///INPUT/// HERE INDICATE HOW MANY PIXELS PER SIDE FOR CROPPING CELLS
-CELLSIZE    = 65;
-setMontageParam(MONTAGE,"PICPERWELL",PICPERWELL);
-setMontageParam(MONTAGE,"CELLPERSIDE",15);
-setMontageParam(MONTAGE,"pxCELL",65);
-setMontageParam(MONTAGE,"FILENAME",name);
-setMontageParam(MONTAGE,"BITMODE",IMGTYPE);
-setMontageParam(MONTAGE,"BACKGROUND",'black');
-MONTAGE = updateMontageParams(MONTAGE);
-IJ.log("Name of the Montage     : "+MONTAGE['FILENAME']);
-IJ.log("Montage Image type      : "+MONTAGE['BITMODE']);
-IJ.log("Montage Width           : "+MONTAGE['WIDTH']);
-IJ.log("Montage Height          : "+MONTAGE['HEIGHT']);
-
-///------------------------------------------------END OF USER INPUT------------------------------------------------///
-
-minCELLAREA = 500;
-maxCELLAREA = 3500;
 
 function initRM(){
 	if(RM==null){ RM = RoiManager(); }
@@ -737,12 +469,15 @@ function initRM(){
 
 function initCopyStatus(x0,y0){
 	var status = {};
+	status['channel'] = undefined;
+	status['ROWINPUT'] = 1;
+	status['FIRSTWELL'] = true;
 	status['LASTROW'] = false;
 	status['picno'] = 1;
 	status['Xpos'] = x0;
 	status['Ypos'] = y0;
-	status['well'] = "";
-	status['orf'] = "";
+	status['well'] = undefined;
+	status['orf'] = undefined;
 	status['NCELLS'] = 0;
 	status['KEPT']   = 0;
 	status['COPIED'] = 0;
@@ -759,6 +494,7 @@ function NextWell(lastVal, currentVal,M,S,O){
 	
 	IJ.log("(0) Check if well changed");
 	var nextwell = (lastVal !== currentVal);
+	if(lastVal !== undefined ){ S['FIRSTWELL'] = false; }
 	if( nextwell ){
 		IJ.log(dash.repeat(100));
 		IJ.log("== Next well "+nextwell+" == ");
@@ -767,6 +503,7 @@ function NextWell(lastVal, currentVal,M,S,O){
 		var W = Well2pos(currentVal,M,true);
 		IJ.log(dash.repeat(100));
 
+		S['ROWINPUT']++;
 		S['picno'] = 1;
 		S['Xpos']  = W['x'];
 		S['Ypos']  = W['y'];
@@ -902,8 +639,9 @@ function makeCellGrid(GRID,IMG,C,M,S){
 	    IMP.changes=false;
 	    IMP.close();
   	}
-
+  	
   	if( S['picno'] == M['PICPERWELL'] || S['LASTROW']){
+		IJ.log("PICNUM="+S['picno'] + " PIC PER WELL " + M['PICPERWELL']+" CH = "+S['channel'] );
 		IJ.selectWindow(GRID.getTitle());
 		IJ.log("====> ADD WELL LABEL <====");
 		IJ.log("WELL "+S['well']+" PLATE COORDINATES X="+S['Xpos']+" Y="+S['Ypos']+" ( PICNUM "+S['picno']+")");
@@ -913,122 +651,148 @@ function makeCellGrid(GRID,IMG,C,M,S){
 		wellROI.setStrokeColor(Color.yellow);
   		wellROI.setName(S['well']+"_"+S['orf']);
   		RM.addRoi(wellROI);
-  		//wellLABELS.add(wellROI,S['well']+"_"+S['orf']); //WELL LABEL (8bits)
-		//wellLABELS.setLabelColor(Color.yellow);
-		//IJ.run("To ROI Manager", "");
 		RM.moveRoisToOverlay(GRID);
 		IJ.run("Show Overlay", "");
 		IJ.run("Labels...", "font=18 show use bold");
 	 	IJ.saveAs(GRID, "Tiff", OUTDIR + '/' + GRID.getTitle());
-		GRID.changes = false;
+		GRID.changes=false;
 		GRID.close();
 	}
+
 }
 
+
+
+
+///---------------------------- MAIN ----------------------------///
+IJSetup();
+MONTAGE=initMontageParams();
+
+/// USER INPUT
+PARAMFILE = "/media/elusers/users/benjamin/A-PROJECTS/01_PhD/04-image-analysis/JS4Fiji/input-for-cell-grid-montage.tsv"; // ARGV[0]
+IJ.log('PARAMFILE '+PARAMFILE);
+OUTPATH   = "/media/elusers/users/benjamin/A-PROJECTS/01_PhD/04-image-analysis/JS4Fiji/"; // ARGV[1] or dirname(ARGV[0])
+IJ.log('OUTPATH '+ OUTPATH);
+OUTDIR = dirname(OUTPATH,'/');
+IJ.log('OUTDIR '+ OUTDIR);
+SCREENNAME = 'test-cellgrid';
+IMGTYPE     = "8-bit";
+name  = SCREENNAME + "_" + IMGTYPE;
+MONTAGEtype  = IMGTYPE + " black";
+
+PICPERWELL  = 8;  ///INPUT/// HERE INDICATE HOW MANY PICTURES WERE TAKEN PER WELL
+CELLSIZE    = 65; ///INPUT/// HERE INDICATE HOW MANY PIXELS PER SIDE FOR CROPPING CELLS
+CELLSIDE    = 15; ///INPUT/// HERE INDICATE HOW MANY CELLS PER SIDE OF THE CELL GRID
+
+IN=openTable(PARAMFILE,'\t',true);
+INPUT = IN['data'];
+HEADER = IN['fields'].join(" ");
+//var regexChannel = new RegExp('c[0-9]','gi');
+var CHANNELS = HEADER.match(/c[0-9]/gi);
+//var CHANNELS = regexChannel.exec();
+IJ.log("COLUMNS NAMES FOR CHANNELS ARE : " + CHANNELS);
+
+///INPUT/// FINALLY YOU NEED TO DEFINE THE LUT, WHICH CORRESPONDS TO THE COLORSPACE THAT NEEDS TO BE USED TO REPRESENT INTENSITIES (for example RFP is displayed as red pixels)
+LUT=new Array("Grays","Green","Red","Cyan");
+///INPUT/// HERE IS THE OUPTUT DIRECTORY FOR THE MONTAGE IMAGE
+var MontageFolder = File(OUTDIR);
+if(!MontageFolder.exists()){ 
+	IJ.log("====> Output directory does not exist!");
+	IJ.log("Creating directory '"+OUTDIR+"'...");
+	MontageFolder.mkdir();
+}
+
+setMontageParam(MONTAGE,"PICPERWELL",PICPERWELL);
+setMontageParam(MONTAGE,"CELLPERSIDE",CELLSIDE);
+setMontageParam(MONTAGE,"pxCELL",CELLSIZE);
+setMontageParam(MONTAGE,"FILENAME",name);
+setMontageParam(MONTAGE,"BITMODE",IMGTYPE);
+setMontageParam(MONTAGE,"BACKGROUND",'black');
+MONTAGE = updateMontageParams(MONTAGE);
+IJ.log("Name of the Montage     : "+MONTAGE['FILENAME']);
+IJ.log("Montage Image type      : "+MONTAGE['BITMODE']);
+IJ.log("Montage Width           : "+MONTAGE['WIDTH']);
+IJ.log("Montage Height          : "+MONTAGE['HEIGHT']);
+
+///------------------------------------------------END OF USER INPUT------------------------------------------------///
+//inCELLAREA = 500;
+//maxCELLAREA = 3500;
 
 IJ.run("Close All", "");
 initRM();
 getMontageAllParams(MONTAGE); // PRINTING MONTAGE PARAMETERS
 var STATUS = initCopyStatus(MONTAGE['pxBORDER'],MONTAGE['pxBORDER']);
-for(var irow=0; irow<INPUT.length; irow++){
-	STATUS['LASTROW'] = (irow == INPUT.length-1);
-	IJ.log("PICNUM = "+STATUS['picno']+" => PLATE "+INPUT[irow]['plate']+" WELL "+INPUT[irow]['well']+" ORF "+INPUT[irow]['orf']);
-	if(MONTAGE['skipFirstPIC']){ IJ.log("...SKIPPING THE FIRST PICTURE OF THE WELL..."); STATUS['picno']++; continue; }
-	// CHECK IF WELL HAS BEEN VISITED
-	NextWell(STATUS['well'], INPUT[irow]['well'], MONTAGE,STATUS,INPUT[irow]['orf']);
-	IJ.log("(1) Get detected cells in segmented image from (channel c0)");
-	// READ IMAGE FILE WITH SEGMENTED CELLS
-	var SEG = getImageSegmented(INPUT[irow]['c0']);
-	if( SEG == null ){ STATUS['picno']++; continue; }
-	// RETRIEVE SEGMENTED CELLS
-	var CELLS = getCells(SEG);
-	STATUS['NCELLS'] = CELLS.length;
-	IJ.log("=> Number of cells detected in segmented image : "+STATUS['NCELLS']);
-	if( CELLS.length == 0 ){ STATUS['COPY'] == false;  STATUS['picno']++;  continue; }
-	else{ STATUS['COPY'] = true; }
-	STATUS['NKEEP'] = STATUS['NCELLS'] - STATUS['NDROP'];
-	STATUS['TOTALCELLS'] += STATUS['NKEEP'];
-	// FILTER SEGMENTED CELLS
-  	var KEEP  = new Array();
-  	var DROP  = new Array();
+var t0 = new Date().getTime();
 
-	var ich=0;
-	var ch = 'c'+ich;
-	//for(var ich=0; ich<INPUT.length; ich++){
+var CELLGRID;
+for(var ich=0; ich<CHANNELS.length; ich++){
 
-	var t0 = new Date().getTime();
-	var nlab=0; 
+	var ch = CHANNELS[ich];
+	IJ.log('current channel is '+ch);
+	STATUS['channel'] = ch;
 	
-	// CREATE A LARGE BLANK IMAGE FOR THE MONTAGE WITH A NAME BASED ON PLATE NUM AND CHANEL CHOOSED
-	//var MONTAGEimp=IJ.createImage(MONTAGE['FILENAME'],MONTAGE['BITMODE']+" "+MONTAGE['BACKGROUND'],MONTAGE['WIDTH'],MONTAGE['HEIGHT'],1);	
-	//IJ.log("Show Montage window");
-	//MONTAGEimp.show();
-	var IMG = INPUT[irow][ch];
-	if(	!IMG.exists ){ IJ.log("IMAGE FROM CHANNEL "+IMG+" IS MISSING"); ipic++; continue; }
-	if( STATUS['picno'] == 1){
-		initRM(RM);
-		var WELLname = INPUT[irow]['orf']+"_"+INPUT[irow]['plate']+'_'+INPUT[irow]['well']+"_"+ch;
-		var WELLimp=IJ.createImage(WELLname,MONTAGE['BITMODE']+" "+MONTAGE['BACKGROUND'],MONTAGE['WELLSIDE'],MONTAGE['WELLSIDE'],1);	
-		IJ.run(WELLimp, LUT[ich], "");
+	for(var irow=0; irow<INPUT.length; irow++){
+
+		var t1 = new Date().getTime();
 		
-		WELLimp.show();
-	}
-	makeCellGrid(WELLimp, IMG, CELLS, MONTAGE, STATUS);
+		STATUS['LASTROW'] = (irow == INPUT.length-1);
+		if(MONTAGE['skipFirstPIC']){ IJ.log("...SKIPPING THE FIRST PICTURE OF THE WELL..."); STATUS['picno']++; continue; }
 	
-	while(CELLS.length > 0 ){ CELLS.pop(); }
-	while(KEEP.length > 0  ){ KEEP.pop();  }
-	while(DROP.length > 0  ){ DROP.pop();  }
-	IJ.log("NCELLS="+STATUS['NCELLS']+" KEPT="+STATUS['NKEEP'] + " DROPPED="+STATUS['NDROP']);
-	STATUS['picno']++;
-	IJ.log(space.repeat(100));
+		// CHECK IF WELL HAS BEEN VISITED
+		NextWell(STATUS['well'], INPUT[irow]['well'], MONTAGE,STATUS,INPUT[irow]['orf']);
+	
+		IJ.log("(1) Get detected cells in segmented image from (channel c0)");
+		// READ IMAGE FILE WITH SEGMENTED CELLS
+		var SEG = getImageSegmented(INPUT[irow]['c0']);
+		if( SEG == null ){ STATUS['picno']++; continue; }
+		
+		// RETRIEVE SEGMENTED CELLS
+		var CELLS = getCells(SEG);
+		STATUS['NCELLS'] = CELLS.length;
+		IJ.log("=> Number of cells detected in segmented image : "+STATUS['NCELLS']);
+		if( CELLS.length == 0 ){ STATUS['COPY'] == false;  STATUS['picno']++;  continue; }
+		else{ STATUS['COPY'] = true; }
+		STATUS['NKEEP'] = STATUS['NCELLS'] - STATUS['NDROP'];
+		STATUS['TOTALCELLS'] += STATUS['NKEEP'];
+	
+		// CREATE A LARGE BLANK IMAGE FOR THE MONTAGE WITH A NAME BASED ON PLATE NUM AND CHANEL CHOOSED
+		//var MONTAGEimp=IJ.createImage(MONTAGE['FILENAME'],MONTAGE['BITMODE']+" "+MONTAGE['BACKGROUND'],MONTAGE['WIDTH'],MONTAGE['HEIGHT'],1);	
+		//IJ.log("Show Montage window");
+		//MONTAGEimp.show();
+
+		var IMG = INPUT[irow][ch];
+		if(	!IMG.exists ){ IJ.log("IMAGE FROM CHANNEL "+IMG+" IS MISSING"); ipic++; continue; }
+		
+		if( STATUS['picno'] == 1 ){
+			initRM(RM); // Clear ROI manager
+			// Create grid image for current well
+			var wellname = INPUT[irow]['orf']+"_"+INPUT[irow]['plate']+"_"+INPUT[irow]['well']+"_"+ch ;
+			IJ.log('==> CELL GRID IMAGE = '+wellname);
+			CELLGRID = IJ.createImage(wellname,MONTAGE['BITMODE']+" "+MONTAGE['BACKGROUND'],MONTAGE['WELLSIDE'],MONTAGE['WELLSIDE'],1);	
+			IJ.run(CELLGRID, LUT[ich], "");
+			CELLGRID.show();
+		}
+
+		makeCellGrid(CELLGRID, IMG, CELLS, MONTAGE, STATUS);
+
+		
+		if( STATUS['picno'] == MONTAGE['PICPERWELL'] ){
+			IJ.log(equal.repeat(100));
+			var t1 = new Date().getTime();
+			IJ.log("PROCESSING WELL " + INPUT[irow]['well'] + " TOOK : " + Math.round((t1-t0)/1000) + "sec");
+			IJ.log(equal.repeat(100));
+		}
+	
+		while(CELLS.length > 0 ){ CELLS.pop(); }
+		IJ.log("NCELLS="+STATUS['NCELLS']+" KEPT="+STATUS['NKEEP'] + " DROPPED="+STATUS['NDROP']);
+		STATUS['picno']++;
+		IJ.log(space.repeat(100));
+	}
+
+
 }
 
-
-
-// 	}
-	
-// 	IJ.log(space.repeat(100));
-// 	IJ.log("MAX INTENSITY IN PLATE : "+STATUS['MAXINT']);
-// 	IJ.setMinAndMax(MONTAGEimp, 0, STATUS['MAXINT']);
-// 	IJ.log(dash.repeat(100));
-// 	IJ.log("(5) Draw the border of the plate montage and save as TIFF");
-// 	colname=nlab;
-// 	for (var NCOL=0; NCOL < MONTAGE['PLATECOLS'] ; NCOL++){
-// 		IJ.selectWindow(MONTAGE['FILENAME']);
-// 		rowROI = new Roi(NCOL*MONTAGE['WELLSIDE']+MONTAGE['pxBORDER'],0,MONTAGE['WELLSIDE'],MONTAGE['pxBORDER']);
-// 		rowROI.setStrokeWidth(2);
-// 		rowROI.setStrokeColor(Color.yellow);
-// 		wellLABELS.add(rowROI,COLS[NCOL]); // ROW LABELS (8bits)
-// 		colname++;
-// 	}
-	
-// 	rowname=colname;
-// 	for (var NROW=0 ; NROW < MONTAGE['PLATEROWS'] ; NROW++){
-// 		IJ.selectWindow(MONTAGE['FILENAME']);
-// 		colROI = new Roi(0,NROW*MONTAGE['WELLSIDE']+MONTAGE['pxBORDER'],MONTAGE['pxBORDER'],MONTAGE['WELLSIDE']);
-// 		colROI.setStrokeWidth(2);
-// 		colROI.setStrokeColor(Color.yellow);
-// 		wellLABELS.add(colROI,LETTERS[NROW]); // COLUMN LABELS (8bits)
-// 		rowname++;
-// 	}
-// 	IJ.log(dash.repeat(100));
-// 	IJ.run(MONTAGEimp, LUT[ich], "");
-// 	IJ.log("This channel uses the color scheme : "+LUT[ich]);
-// 	MONTAGEimp.setOverlay(wellLABELS);
-// 	IJ.run("To ROI Manager", "");
-// 	IJ.run("Show Overlay", "");
-// 	IJ.run("Labels...", "color=white font=18 show use bold");
-	
-// 	IJ.log("Saving the plate montage at : "+OUTDIR + "/" + MONTAGE['FILENAME'] );
-// 	IJ.saveAs(MONTAGEimp, "Tiff", OUTDIR + '/' + MONTAGE['FILENAME']);
-
-// 	RM.reset();
-// 	MONTAGEimp.close();
-
-// 	IJ.log(star.repeat(100));
-// 	var t5=new Date().getTime();
-// 	IJ.log("TOTAL TIME TAKEN FROM WELL " + INPUT[0]['well'] + " TO WELL " + INPUT[INPUT.length-1]['well'] + " : " + Math.round((t5-t0)/1000) + " sec " );
-// 	IJ.log(space.repeat(100));
-// 	IJ.log(space.repeat(100));
-// // END OF PROCESSING MUTLIPLE CHANELS
-// IJ.run("Close All", "");
+IJ.log(star.repeat(100));
+var t5=new Date().getTime();
+IJ.log("TOTAL TIME TAKEN FROM WELL " + INPUT[0]['well'] + " TO WELL " + INPUT[INPUT.length-1]['well'] + " : " + Math.round((t5-t0)/1000) + " sec " );
+IJ.log(space.repeat(100));
