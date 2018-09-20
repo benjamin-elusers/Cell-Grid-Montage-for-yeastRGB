@@ -7,7 +7,12 @@ It creates a montage image where cells identified in microscopy images (saved as
 To apply our script to your images, a tabulated file (TSV or CSV format) with the following fields (columns) is required.
 The first row should start with a hashtag sign ("#") followed by the name of the required fields :
 
-1. *plate* gives the number of the 384 well plate from which images were acquired (for a proteome-wide screen, this typically ranges from 1 to 16).
+ plate | well | orf | c0 | c1 | c2 | c3 |
+-------|------|-----|----|----|----|----|
+plate1 | A01  | YAL002W | screen-brightfield-00001.tif | screen-GFP-00001.tif | screen-RFP-00001.tif | screen-BFP-00001.tif |
+plate1 | A01  | YAL002W | screen-brightfield-00002.tif | screen-GFP-00002.tif | screen-RFP-00002.tif | screen-BFP-00002.tif |
+
+1. *plate* gives the number of the 384 well plate from which images were acquired (for a proteome-wide screen, this typically ranges from 1 to 16).
 2. *well* id must be 3 characters long starting from A01 to P24 (it should be 384 wells exactly).
 3. *orf* must contain an uppercase identifier for the gene locus tagged.
 4. *c0* must contain full path to the images containing segmentation information. ROIs must be saved as overlays and the images should be in OME-TIFF file format.
