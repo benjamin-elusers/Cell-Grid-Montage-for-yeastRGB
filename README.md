@@ -9,7 +9,8 @@ The first row should start with a hashtag sign ("#") followed by the name of the
 
 `#plate,well,orf,c0,c1,c2,c3`
 
-Example: 
+Example:
+
  #plate | well | orf | c0 | c1 | c2 | c3 |
 -------|------|-----|----|----|----|----|
 plate1 | A01  | YAL002W | screen-brightfield-00001.tif | screen-GFP-00001.tif | screen-RFP-00001.tif | screen-BFP-00001.tif |
