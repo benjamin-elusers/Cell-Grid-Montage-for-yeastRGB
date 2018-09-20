@@ -11,6 +11,8 @@ The first row should start with a hashtag sign ("#") followed by the name of the
 -------|------|-----|----|----|----|----|
 plate1 | A01  | YAL002W | screen-brightfield-00001.tif | screen-GFP-00001.tif | screen-RFP-00001.tif | screen-BFP-00001.tif |
 plate1 | A01  | YAL002W | screen-brightfield-00002.tif | screen-GFP-00002.tif | screen-RFP-00002.tif | screen-BFP-00002.tif |
+....
+plate1 | P24  | NA | NA | NA | NA | NA |
 
 1. *plate* gives the number of the 384 well plate from which images were acquired (for a proteome-wide screen, this typically ranges from 1 to 16).
 2. *well* id must be 3 characters long starting from A01 to P24 (it should be 384 wells exactly).
