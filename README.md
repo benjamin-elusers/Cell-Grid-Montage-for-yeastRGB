@@ -6,7 +6,9 @@ It creates a montage image where cells identified in microscopy images (saved as
 ### Format of the screen definition file
 To apply our script to your images, a tabulated file (TSV or CSV format) with the following fields (columns) is required.
 The first row should start with a hashtag sign ("#") followed by the name of the required fields :
+`#plate | well | orf | c0 | c1 | c2 | c3`
 
+Example: 
  #plate | well | orf | c0 | c1 | c2 | c3 |
 -------|------|-----|----|----|----|----|
 plate1 | A01  | YAL002W | screen-brightfield-00001.tif | screen-GFP-00001.tif | screen-RFP-00001.tif | screen-BFP-00001.tif |
