@@ -40,39 +40,28 @@ plate1 | P24  | NA | NA | NA | NA | NA |
     else
         exit("Input file is invalid.")
 
-    For each rowInput in INPUT:
-
-        1. Check if well has been visited
-           if FALSE :
-              update STATUS (picnum reset to 1, get well position on plate)
-              GRIDIMG = create grid image for each channel
+    For each CHANNEL ( c0 c1 c2 c3 )
+        CHIMG = open image from CHANNEL
+        
+        For each rowInput in INPUT:
+            1. Check if well has been visited
+               if FALSE :
+                  update STATUS (picnum reset to 1, get well position on plate)
+                  GRIDIMG = create grid image for each well
     
-        2. Get detected cells in segmented image (channel c0) in Array of Cell Objects (CELLS)
-           if CELLS length is 0 :
-              skip to next rowInput
-           else
-              For each CHANNEL ( c0 c1 c2 c3 )
-                  if STATUS->PlateMontage == TRUE and STATUS->FIRSTWELL == TRUE
-                      PLATEIMG = create 384-wellplate montage image
-
-                  CHIMG = open image from CHANNEL
-                  
+            2. Get detected cells in segmented image (channel c0) in Array of Cell Objects (CELLS)
+               if CELLS length is 0 :
+                  skip to next rowInput
+               else            
                   if STATUS->Copy == TRUE
-                      3.a) copy ROI from CELLS from CHIMG to corresponding GRIDIMG
-                           if STATUS->CopiedCells == MONTAGE->MaxCellPerWell
-                               save GRIDIMG as TIFF with labels
-                               set STATUS->Copy to FALSE
+                      3.a) copy ROI into CELLS from CHIMG to corresponding GRIDIMG
+                      if STATUS->CopiedCells == MONTAGE->MaxCellPerWell
+                         save GRIDIMG as TIFF with labels
+                         set STATUS->Copy to FALSE
                   else
-                      3.b) skip to next rowInput
-              end of CHANNEL loop
-    
-         if STATUS->PlateMontage == TRUE
-             4. Copy GRIDIMG to PLATEIMG at well position on plate
-             
-         close GRIDIMG
-
-     end of INPUT loop
-
+                      3.b) skip to next rowInput    
+        end of INPUT loop
+    end of CHANNEL loop
 
 -----
 
