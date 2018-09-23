@@ -1,6 +1,21 @@
 /* Author  : Benjamin Dubreuil
  * Date    : 23 Sept. 2018 
  * Project : YeastRGB - Cell Grid Montage (v4.2)
+ * Instructions
+    To run in batch mode from Command Line Interface. 
+    Usage > xvfb-run -a [PATH/TO/FIJI] [PATH/TO/CELL-GRID-SCRIPT] 'arg1 arg2 arg3 ...'
+    *Mandatory script arguments
+      arg1:  PATH/TO/TABULATED/INPUT/FILE
+      arg2: PATH/TO/OUTPUT/DIRECTORY
+      arg3: SCREEN NAME
+    *Optional Arguments :
+      arg4: [INTEGER, default=15] Number of cells on each grid side
+      arg5: [INTEGER, default=65] Size of cell in pixels
+      arg6: [INTEGER, default=8] Number of pictures per well
+      arg7: [INTEGER, default=1] Field delimiter -> 1='tab' (\t) or 2='comma' (,)
+      arg8: [INTEGER, default=1] Path separator -> 1='unix' (/) or 2='windows' (\)
+      arg9: [INTEGER, default=1] Image bitmode -> 1='8bit' or 2='16bit'
+      arg10: [INTEGER, default=1000000] Stop processing when row input reach this value
  */
 
 ///---------------------------- USEFUL VARIABLES -----------------------------///
