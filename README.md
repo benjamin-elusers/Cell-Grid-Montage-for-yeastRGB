@@ -1,7 +1,9 @@
 # Cell-Grid-Montage
-This Javascript must be run within imageJ/Fiji. 
-It creates a montage image where cells identified in microscopy images (saved as ROIs) are extracted and arrayed on a grid.
+This Javascript can only work when called by imageJ/Fiji.
+The GUI version must be run within the Fiji script editor.
+The CLI version must be run with xvfb-run in a terminal session.
 
+Both scripts create a montage cell-grid image where cells identified in microscopy images (saved as ROIs) are extracted and arrayed on a grid for each well of a 384-wellplate.
 
 ### Format of the screen definition file
 To apply our script to your images, a tabulated file (TSV or CSV format) with the following fields (columns) is required.
