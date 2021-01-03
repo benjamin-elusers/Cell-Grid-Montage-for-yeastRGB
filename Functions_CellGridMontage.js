@@ -42,18 +42,244 @@
 	MACRO.batchMode = true;
 }
 
-function ERRORexit(msg){
-	IJ.log(msg);
-	java.lang.System.exit(-1);
+// PROTOTYPES METHODS 
+// i.e. built-in functions from latest version of JavaScript which are not implemented in the JavaScript Rhino interpreter
+Array.prototype.map = function(callback/*, thisArg*/){
+    var T, A, k;
+    if (this == null) { throw new TypeError('this is null or not defined'); }
+    // 1. Let O be the result of calling ToObject passing the |this| value as the argument.
+    var O = Object(this);
+    // 2. Let lenValue be the result of calling the Get internal method of O with the argument "length".
+    // 3. Let len be ToUint32(lenValue).
+    var len = O.length >>> 0;
+    // 4. If IsCallable(callback) is false, throw a TypeError exception.
+    // See: http://es5.github.com/#x9.11
+    if (typeof callback !== 'function') { throw new TypeError(callback + ' is not a function'); }
+    // 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+    if (arguments.length > 1) { T = arguments[1]; }
+    // 6. Let A be a new array created as if by the expression new Array(len) 
+    //    where Array is the standard built-in constructor with that name and 
+    //    len is the value of len.
+    A = new Array(len);
+    // 7. Let k be 0
+    k = 0;
+    // 8. Repeat, while k < len
+    while (k < len) {
+      var kValue, mappedValue;
+      // a. Let Pk be ToString(k). // This is implicit for LHS operands of the in operator
+      // b. Let kPresent be the result of calling the HasProperty internal method of O with argument Pk. // This step can be combined with c
+      // c. If kPresent is true, then
+      if (k in O) {
+        // i. Let kValue be the result of calling the Get internal method of O with argument Pk.
+        kValue = O[k];
+        // ii. Let mappedValue be the result of calling the Call internal method of callback with T as the this value and argument list containing kValue, k, and O.
+        mappedValue = callback.call(T, kValue, k, O);
+        // iii. Call the DefineOwnProperty internal method of A with arguments Pk, Property Descriptor
+        //{ Value: mappedValue, Writable: true, Enumerable: true, Configurable: true }, and false.
+        // In browsers that support Object.defineProperty, use the following:
+        // Object.defineProperty(A, k, {value: mappedValue, writable: true, enumerable: true, configurable: true });
+        // For best browser support, use the following:
+        A[k] = mappedValue;
+      }
+      k++; // d. Increase k by 1.
+    }
+    return A; // 9. return A
 }
+
+Array.prototype.filter = function(func, thisArg) {
+    'use strict';
+    if ( ! ((typeof func === 'Function' || typeof func === 'function') && this) )
+        throw new TypeError();
+   
+    var len = this.length >>> 0,
+        res = new Array(len), // preallocate array
+        t = this, c = 0, i = -1;
+
+    var kValue;
+    if (thisArg === undefined){
+      while (++i !== len){
+        // checks to see if the key was set
+        if (i in this){
+          kValue = t[i]; // in case t is changed in callback
+          if (func(t[i], i, t)){
+            res[c++] = kValue;
+          }
+        }
+      }
+    }
+    else{
+      while (++i !== len){
+        // checks to see if the key was set
+        if (i in this){
+          kValue = t[i];
+          if (func.call(thisArg, t[i], i, t)){
+            res[c++] = kValue;
+          }
+        }
+      }
+    }
+   
+    res.length = c; // shrink down array to proper size
+    return res;
+}
+
+Object.prototype.keys = function(obj) {
+	'use strict';
+    if (typeof obj !== 'function' && (typeof obj !== 'object' || obj === null)) {
+      throw new TypeError('Object.keys called on non-object');
+    }
+
+    var result = [], prop, i;
+
+    for (prop in obj) {
+      if (hasOwnProperty.call(obj, prop)) { result.push(prop); }
+    }
+
+    if (hasDontEnumBug) {
+      for (i = 0; i < dontEnumsLength; i++) {
+        if (hasOwnProperty.call(obj, dontEnums[i])) { result.push(dontEnums[i]); }
+      }
+    }
+    return result;
+}
+
+String.prototype.repeat = function(count) {
+    'use strict';
+    if (this == null) { throw new TypeError('can\'t convert ' + this + ' to object'); }
+    var str = '' + this;
+    count = +count;
+    if(count != count){ count = 0; }
+    if(count < 0){ throw new RangeError('repeat count must be non-negative'); }
+    if(count == Infinity){ throw new RangeError('repeat count must be less than infinity'); }
+    count = Math.floor(count);
+    if(str.length == 0 || count == 0){ return ''; }
+    // Ensuring count is a 31-bit integer allows us to heavily optimize the main part. 
+    // But anyway, most current (August 2014) browsers can't handle strings 1 << 28 chars or longer, so:
+    if(str.length * count >= 1 << 28){ throw new RangeError('repeat count must not overflow maximum string size'); }
+    var rpt = '';
+    for(;;){
+      if ((count & 1) == 1) { rpt += str; }
+      count >>>= 1;
+      if (count == 0){ break; }
+      str += str;
+    }
+    // Could we try:
+    // return Array(count + 1).join(this);
+    return rpt;
+}
+
+Array.prototype.indexOf = function indexOf(member, startFrom) {
+    'use strict';
+    /*
+    In non-strict mode, if the `this` variable is null or undefined, then it is set to the window object.
+    Otherwise, `this` is automatically converted to an object. 
+    In strict mode, if the `this` variable is null or undefined, a `TypeError` is thrown.
+    */
+	if (this == null) { throw new TypeError("Array.prototype.indexOf() - can't convert `" + this + "` to object"); }
+
+	var index = isFinite(startFrom) ? Math.floor(startFrom) : 0,
+	    that = this instanceof Object ? this : new Object(this),
+	    length = isFinite(that.length) ? Math.floor(that.length) : 0;
+
+	if (index >= length){ return -1; }
+	if (index < 0) { index = Math.max(length + index, 0); }
+
+	if (member === undefined) {
+		/* Since `member` is undefined, keys that don't exist will have the same value as `member`, and thus do need to be checked. */
+	  do{
+	    if (index in that && that[index] === undefined) { return index; }
+	  }while (++index < length);
+	}else{
+	  do{
+	  	if (that[index] === member) { return index; }
+	  }while (++index < length);
+	}
+	return -1;
+}
+
+// Generic functions
+
+function ERRORexit(msg){ IJ.log(msg); java.lang.System.exit(-1); }
+function isNumeric(value) { // returns true if value is numeric and false if it is not.
+	var NumRegexp = /^(-)?(\d+)(\.?)(\d*)$/; 
+	return String(value).match(RegExp);
+}
+function isUndefined(value){ return value === void(0); }
+function isEmpty(str) { return str === ''; }
+function notEmpty(str) {  return str !== ''; }
+function isInt(n){ return Number(n) === n && n % 1 === 0; }
+function dirname(str, sep){ return str.substr(0,str.lastIndexOf(sep)); }
+function basename(str, sep){ return str.substr(str.lastIndexOf(sep) + 1); }
+function stripext(str) { return str.substr(0,str.lastIndexOf('.')); }
+function getext(str) { return str.substr(str.lastIndexOf('.')+1); }
+// path = '/media/elusers/users/benjamin/A-PROJECTS/01_PhD/04-image-analysis/JS4Fiji/test-CellGridMontage.input';
+// print("DIR is "+dirname(path,'/'));
+// print("FILE is "+basename(path,'/'));
+// print("FILENAME is "+stripEXT(basename(path,'/')));
+// print("EXTENSION is "+getEXT(path));
+
+function sortArr(Arr,asc){
+	var sorted = Arr.slice(0);
+	if( asc === undefined ){
+		// It returns the sorted array in ascending order.
+	    sorted.sort(function(a, b){return a-b}); 
+	    return sorted;
+	}else{
+		// It returns the sorted array in descending order.
+	    sorted.sort(function(a, b){return b-a}); 
+	    return sorted;
+	}
+}
+
+function seqD(start,end,delta){
+	var Arr = new Array();
+	if(delta == 0 ){ return(Arr) }
+	if( start > end ){ return(Arr) }
+	if(delta < 0 ){ delta = -delta; }
+	if( delta > end-start ){ delta = end; }
+	for (var i = start; i < end+1; i+=delta){ Arr.push(i); }
+	return(Arr)
+}
+//vec = new Array(2,3,5,6,9,17,21,22,23,25,28,29,30,31,33,37,39,41,42,44,45,46,47,48,50,51,54,56,57,62,63,65,66,69,70,72,73,74,75,76,77,78,79,81,86,88,89,90,91,92,93,94,95,102,105,106,107,108,112,113,114,116,117,120,121,122,123,124,125,126,128,129,132,134,135,137,138,141,142,145,146,149,152,155,156,157,158,161,163,167,169,171,172,173,174,175,176,178,179,182,183,184,185,186,188,190,191,193,194,195,197,198,199);
+function seqL(start,end,len){
+	var Arr = new Array();
+	if( len<1 ){ return(Arr) }
+	if( start > end ){ return(Arr) }
+	if( end < len ){ len = end; }
+	var delta = (end-start) / (len-1) ;
+	var nval=0;
+	for (var i = start; i <= end-delta && nval < len-1; i+=delta){ Arr.push(Math.floor(i)); nval++; }
+	Arr.push(Math.floor(end-1));
+	return(Arr)
+}
+//print(vec.length);
+//print( seqL(0,vec.length,32) );
+//ivec=seqL(0,vec.length,32);
+function subset(Arr,ind){
+	var sub = new Array();
+	for(var i=0; i<ind.length; i++){ 
+		if(i<Arr.length){ sub.push(Arr[ind[i]]); }
+		else{ IJ.log("index "+ind[i]+" out of bounds !"); }
+	}
+	return(sub);
+}
+//print(subset(vec,ivec));
+// returns true if the object passed is an integer
 
 VERBMAX = 0; // MAXIMUM VERBOSITY (all messages are displayed)
 function display(verbosity,msg){
+	// verbosity level:
+	//  0   = debug
+	//  1-2 = low-level information 
+	//  3-4 = progress update 
+	//  5   = input parameter
+	//  >5  = always
 	if( verbosity >= VERBMAX ){
 		IJ.log(msg);
 	}
 }
 
+// Montage Functions
 function cell() { 
 // Constructor for any type of ROI. 
     this.idx    = null;
@@ -86,158 +312,6 @@ function cell() {
 	}
 }
 
-function sortArr(Arr,asc){
-	var sorted = Arr.slice(0);
-	if( asc === undefined ){
-		// It returns the sorted array in ascending order.
-	    sorted.sort(function(a, b){return a-b}); 
-	    return sorted;
-	}else{
-		// It returns the sorted array in descending order.
-	    sorted.sort(function(a, b){return b-a}); 
-	    return sorted;
-	}
-}
-
-Object.keys = (function() {
-    'use strict';
-    var hasOwnProperty = Object.prototype.hasOwnProperty,
-        hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
-        dontEnums = [
-          'toString',
-          'toLocaleString',
-          'valueOf',
-          'hasOwnProperty',
-          'isPrototypeOf',
-          'propertyIsEnumerable',
-          'constructor'
-        ],
-        dontEnumsLength = dontEnums.length;
-
-    return function(obj) {
-      if (typeof obj !== 'function' && (typeof obj !== 'object' || obj === null)) {
-        throw new TypeError('Object.keys called on non-object');
-      }
-
-      var result = [], prop, i;
-
-      for (prop in obj) {
-        if (hasOwnProperty.call(obj, prop)) {
-          result.push(prop);
-        }
-      }
-
-      if (hasDontEnumBug) {
-        for (i = 0; i < dontEnumsLength; i++) {
-          if (hasOwnProperty.call(obj, dontEnums[i])) {
-            result.push(dontEnums[i]);
-          }
-        }
-      }
-      return result;
-    };
-  }());
- 
-String.prototype.repeat = function(count) {
-    'use strict';
-    if (this == null) { throw new TypeError('can\'t convert ' + this + ' to object'); }
-    var str = '' + this;
-    count = +count;
-    if(count != count){ count = 0; }
-    if(count < 0){ throw new RangeError('repeat count must be non-negative'); }
-    if(count == Infinity){ throw new RangeError('repeat count must be less than infinity'); }
-    count = Math.floor(count);
-    if(str.length == 0 || count == 0){ return ''; }
-    // Ensuring count is a 31-bit integer allows us to heavily optimize the main part. 
-    // But anyway, most current (August 2014) browsers can't handle strings 1 << 28 chars or longer, so:
-    if(str.length * count >= 1 << 28){ throw new RangeError('repeat count must not overflow maximum string size'); }
-    var rpt = '';
-    for(;;){
-      if ((count & 1) == 1) { rpt += str; }
-      count >>>= 1;
-      if (count == 0){ break; }
-      str += str;
-    }
-    // Could we try:
-    // return Array(count + 1).join(this);
-    return rpt;
-}
-
-Array.prototype.indexOf = function indexOf(member, startFrom) {
-    /*
-    In non-strict mode, if the `this` variable is null or undefined, then it is set to the window object.
-    Otherwise, `this` is automatically converted to an object. 
-    In strict mode, if the `this` variable is null or undefined, a `TypeError` is thrown.
-    */
-	if (this == null) { throw new TypeError("Array.prototype.indexOf() - can't convert `" + this + "` to object"); }
-
-	var
-	  index = isFinite(startFrom) ? Math.floor(startFrom) : 0,
-	  that = this instanceof Object ? this : new Object(this),
-	  length = isFinite(that.length) ? Math.floor(that.length) : 0;
-
-	if (index >= length){ return -1; }
-
-	if (index < 0) { index = Math.max(length + index, 0); }
-
-	if (member === undefined) {
-		/* Since `member` is undefined, keys that don't exist will have the same value as `member`, and thus do need to be checked. */
-	  do{
-	    if (index in that && that[index] === undefined) { return index; }
-	  }while (++index < length);
-	}else{
-	  do{
-	  	if (that[index] === member) { return index; }
-	  }while (++index < length);
-	}
-	return -1;
-}
-
-function seqD(start,end,delta){
-	var Arr = new Array();
-	if(delta == 0 ){ return(Arr) }
-	if( start > end ){ return(Arr) }
-	if(delta < 0 ){ delta = -delta; }
-	if( delta > end-start ){ delta = end; }
-	for (var i = start; i < end+1; i+=delta){ Arr.push(i); }
-	return(Arr)
-}
-//vec = new Array(2,3,5,6,9,17,21,22,23,25,28,29,30,31,33,37,39,41,42,44,45,46,47,48,50,51,54,56,57,62,63,65,66,69,70,72,73,74,75,76,77,78,79,81,86,88,89,90,91,92,93,94,95,102,105,106,107,108,112,113,114,116,117,120,121,122,123,124,125,126,128,129,132,134,135,137,138,141,142,145,146,149,152,155,156,157,158,161,163,167,169,171,172,173,174,175,176,178,179,182,183,184,185,186,188,190,191,193,194,195,197,198,199);
-function seqL(start,end,len){
-	var Arr = new Array();
-	if( len<1 ){ return(Arr) }
-	if( start > end ){ return(Arr) }
-	if( end < len ){ len = end; }
-	var delta = (end-start) / (len-1) ;
-	var nval=0;
-	for (var i = start; i <= end-delta && nval < len-1; i+=delta){ Arr.push(Math.floor(i)); nval++; }
-	Arr.push(Math.floor(end-1));
-	return(Arr)
-}
-//print(vec.length);
-//print( seqL(0,vec.length,32) );
-//ivec=seqL(0,vec.length,32);
-function subset(Arr,ind){
-	var subset = new Array();
-	for(var i=0; i<ind.length; i++){ 
-		if(i<Arr.length){ subset.push(Arr[ind[i]]); }
-		else{ IJ.log("index "+ind[i]+" not in Array! "+Arr); }
-	}
-	return(subset);
-}
-//print(subset(vec,ivec));
-// returns true if the object passed is an integer
-
-function isInt(n){ return Number(n) === n && n % 1 === 0; }
-function dirname(str, sep){ return str.substr(0,str.lastIndexOf(sep)); }
-function basename(str, sep){ return str.substr(str.lastIndexOf(sep) + 1); }
-function stripext(str) { return str.substr(0,str.lastIndexOf('.')); }
-function getext(str) { return str.substr(str.lastIndexOf('.')+1); }
-// path = '/media/elusers/users/benjamin/A-PROJECTS/01_PhD/04-image-analysis/JS4Fiji/test-CellGridMontage.input';
-// print("DIR is "+dirname(path,'/'));
-// print("FILE is "+basename(path,'/'));
-// print("FILENAME is "+stripEXT(basename(path,'/')));
-// print("EXTENSION is "+getEXT(path));
 
 function initMontageParams(){
 	var M={};
@@ -281,12 +355,12 @@ function getMontageAllParams(M){
 	plateSTR+="YOUR PLATE MONTAGE WILL BE IN FORMAT : "+M['PLATEFORMAT']+" wells ("+M['PLATEROWS']+"rows x "+M['PLATECOLS']+"cols)\n";
 	plateSTR+="==> in pixel unit : Width = " + M['WIDTH'] + " px.  Height = "+M['HEIGHT']+" px.\n";
 	plateSTR+="In addition, borders of "+M['pxBORDER']+" px. will be drawn on the left and top side of the plate\n";
-	display(3,sharp.repeat(80)+"\n" + plateSTR);
+	display(5,sharp.repeat(80)+"\n" + plateSTR);
 	
 	gridSTR+="AT MOST, "+M['CELLPERPIC']+" CELLS WILL BE TAKEN FROM EACH WELL PICTURE\n";
 	gridSTR+="EACH CELL WILL BE CONTAINED IN A SQUARE IMAGE OF "+M['pxCELL']+" px.\n";
 	gridSTR+="EACH GRID WILL HAVE AT MOST "+M['CELLPERWELL']+" cells ("+M['CELLPERSIDE']+" cells per side)\n";
-	display(4,sharp.repeat(80)+"\n" + gridSTR);
+	display(5,sharp.repeat(80)+"\n" + gridSTR);
 
 }
 //IJ.log("EXAMPLE getMontageAllParam(MONTAGE)");
@@ -343,9 +417,9 @@ function Well2pos(w,M,debug){
 	wellpos['y']   = M['pxBORDER'] + row*M['WELLSIDE'];
 
 	if( row !== null  & col !== null & debug !== undefined ){
-		display(2,"WELL  string      : "+wellpos['name']);
-		display(2,"Plate coordinates : row = "+row+" ( "+wellpos['row']+" ) "+" col = "+col+" ( "+wellpos['col']+" )");
-		display(2,"Pixel coordinates : x= "+wellpos['x']+" y="+wellpos['y']);
+		display(1,"WELL  string      : "+wellpos['name']);
+		display(1,"Plate coordinates : row = "+row+" ( "+wellpos['row']+" ) "+" col = "+col+" ( "+wellpos['col']+" )");
+		display(1,"Pixel coordinates : x= "+wellpos['x']+" y="+wellpos['y']);
 	}
 	
 	return(wellpos);
@@ -389,6 +463,11 @@ tabRow.prototype.toString = function tabRow2String() {
   return ret;
 }
 
+function rmNA(str){
+	if( str == "NA" ){ str=""; }
+	return str;
+}
+
 function openTable(filepath,sep,header){
 	//IJ.log("Opening tabulated file : ");
 	//IJ.log(filepath);
@@ -399,23 +478,37 @@ function openTable(filepath,sep,header){
 	//IJ.log("Default column names : "+names);
 	if(header==true){  names = lines[0].split(sep); }
 	var table = new Array();
+	var cellid = new Array();
 	IJ.log("Columns of tabulated file are : "+names.join(' '));
 
 	var input = {};
 	input['fields'] = names;
 	for( var n=0+(header==true); n<lines.length; n++){
 		columns = lines[n].split(sep);
-		record = new tabRow(n,columns[0],columns[1].toString(),columns[2],columns[3],columns[4],columns[5],columns[6]);
+		record = new tabRow(n,rmNA(columns[0]),rmNA(columns[1]),rmNA(columns[2]),rmNA(columns[3]),rmNA(columns[4]),rmNA(columns[5]),rmNA(columns[6]));
+		display(0,record.toString());
+		if(columns.length > 6){
+			ROIcol = rmNA(columns[7]);
+		  if( !isUndefined(ROIcol) && notEmpty(ROIcol) ){
+		 	cellroi  = ROIcol.toString();
+		 	cellid.push(cellroi);
+		 }else{
+		 	display(2,"-> NO CELLS AT ROW "+n);
+		 	cellroi = "";
+		 	cellid.push(cellroi);
+		 }
+		}
 //		for( var c=0; c<names.length; c++ ){
 //			hash[names[c]] = columns[c]; 
 //		}
 		table.push(record);
+	  
 	}
 	IJ.log("Tabulated file contained "+(lines.length-header)+" lines with data (except header)");
 	input['data'] = table;
+	input['ROI'] = cellid
 	return(input);
 }
-	
 
 function initRM(){
 	if(RM==null){ RM = RoiManager(); }
@@ -452,7 +545,7 @@ function NextWell(lastVal, currentVal,M,S,O){
 	if(lastVal !== undefined ){ S['FIRSTWELL'] = false; }
 	if( nextwell ){
 		display(2,dash.repeat(100));
-		display(2,"== Next well "+nextwell+" == ");
+		display(2,"== Going to next well : "+nextwell+" == ");
 		display(2,"Previous well #"+lastVal+"#");
 		display(2,"Current well #"+currentVal+"#");
 		var W = Well2pos(currentVal,M,true);
@@ -474,14 +567,21 @@ function NextWell(lastVal, currentVal,M,S,O){
 		S['xcellgrid']  = 0;
 		S['ycellgrid']  = 0;
 		nextwell=false;
+	}else{
+		display(3,"[PICNUM = "+S['picno']+"]");
 	}
+}
+
+function FinishedWell(W, t0 ){
+	var t1 = new Date().getTime();
+	display(3,"PROCESSING WELL " + W + " TOOK : " + Math.round((t1-t0)) + " milliseconds");
 }
 
 function Overlay2Cells(overlays, imp, ip){ 
 	var cells = new Array();
 	for( var iroi=0; iroi < overlays.size(); iroi++){
 		ROI = overlays.get(iroi);
-		if( ROI == null ){ IJ.log("THIS OVERLAY (num="+(iroi)+") DOES NOT EXISTS !"); continue; }
+		if( ROI === null ){ IJ.log("THIS OVERLAY (num="+(iroi)+") DOES NOT EXISTS !"); continue; }
 		var Cell = new cell();
 		Cell.type = "cell";
 		Cell.ROIobj = ROI; 
@@ -511,9 +611,38 @@ function getCells(imp){
 	var ip = imp.getProcessor();
 	var overlays = imp.getOverlay(); // Get the cell overlays from the image with segmented cells
 	imp.show();
-  	if( overlays != null ){ cells = Overlay2Cells(overlays,imp,ip); }
+  	if( overlays !== null ){ cells = Overlay2Cells(overlays,imp,ip); }
 	imp.close();
 	return(cells);
+}
+
+function getSelectedCells(cells,rois){
+	var mycells = new Array();
+	
+	var cells0 = cells.map(function(c){return (c.idx);}); // Cell indices (STARTS AT 0)
+	var cellids = cells0.map(function(v){ return (v+1)}); // Cell identifiers (STARTS AT 1)
+	display(1,"Cells ids are: "+cellids);
+
+	if( cells0.length > 0){
+    	display(2,"==> The following ROIs are going to be selected :"+rois.join("-"));
+		rois0 = rois.map(function(v){ return (v-1)}); // Make ROIS start 0
+				
+		var mycells = cells.filter(function (eachElem, index) { return rois0.indexOf(index) != -1});
+		//display(1,"selected cells ("+mycells.length+") :"+mycells);
+		if( mycells.length > 0){
+			dropped = cells.length - mycells.length;
+	    	display(2,"=> Number of cells : selected = "+mycells.length+"  dropped = "+dropped+"  (total = "+(cells.length)+")");
+			return(mycells);	  	
+		}else{      
+		  	IJ.log("WARNING! None of the "+(ROIS.length)+" selected cells were found.");
+		  	IJ.log("-------> All the existing segmented cells ("+cells.length+") will be considered.");
+		  	for(var j=0; j<cells.length; j++){ display(0,cells[j].toString() );}
+		  	return(cells);
+		}
+	}else{
+		IJ.log("[ERR404]: NO SEGMENTED CELLS FOUND!");
+		return(new Array());
+	}
 }
 
 function getCellSelection(selfile,S){
@@ -555,7 +684,7 @@ function addLabel(to,width,height,text,strokecolor,strokewidth){
 	RM.addRoi(wellROI);
 }
 
-function makeCellGrid(GRID,IMG,C,M,S){
+function makeCellGrid(GRID,IMG,C,M,S,D){
 	display(3,"(3) Crop and tile cells from current well image to cell grid");
 	var wellLABELS = new Overlay();
 	var cellLABELS = new Overlay();	
@@ -563,11 +692,16 @@ function makeCellGrid(GRID,IMG,C,M,S){
 	// START COPYING CELLS IN CURRENT CHANNEL
 	if( S['COPY'] && S['CELLCOPIED'] < M['CELLPERWELL'] && S['picno'] <= M['PICPERWELL'] ){
 	  	IMP = IJ.openImage(IMG);
-	  	IMP.show();
+	  	if(IMP !== null){ 
+	  		IMP.show();
+	  		IP = IMP.getProcessor();
+	  	}else{
+	  		return(null);
+	  	}
 		IJ.run(IMP, "Gaussian Blur...", "sigma=1.00");
 		IJ.run(IMP, "Subtract Background...", "rolling=50");
 	  	IJ.run(IMP, "Enhance Contrast", "saturated=0.35");
-	  	IP = IMP.getProcessor();
+	  	
 
   		for( icell=0; icell < C.length && S['COPY'] && S['CELLCOPIED'] < M['CELLPERWELL']; icell++){
 		  	//IJ.log("SELECTED CELL INDEX IN PIC "+ipic+" : "+indCellPIC+" (nCells = "+nover+" kept="+nkept+" arrayL = "+CELLS.length+")");
@@ -611,19 +745,25 @@ function makeCellGrid(GRID,IMG,C,M,S){
 	    IMP.close();
   	}
   	
-  	if( S['picno'] == M['PICPERWELL'] || S['LASTROW']){
-		display(4,"PICNUM="+S['picno'] + " PIC PER WELL " + M['PICPERWELL']+" CH = "+S['channel'] );
-		display(4,"WELL "+S['well']+" PLATE COORDINATES X="+S['Xpos']+" Y="+S['Ypos']+" ( PICNUM "+S['picno']+")");
-		display(4,"TOTAL CELLS = "+S['TOTALCELLS']+" (COPIED="+S['CELLCOPIED']+")");
-		addLabel(GRID,M['WELLSIDE'],M['WELLSIDE'],S['well']+"_"+S['orf'],Color.yellow,2);
+ 	if( S['picno'] == M['PICPERWELL'] || S['LASTROW']){
+ 		addLabel(GRID,M['WELLSIDE'],M['WELLSIDE'],S['well']+"_"+S['orf'],Color.yellow,2);
 		RM.moveRoisToOverlay(GRID);
 		IJ.run("Show Overlay", "");
 		IJ.run("Labels...", "font=18 show use bold");
-	 	IJ.saveAs(GRID, "Tiff", OUTDIR + '/' + M['FILENAME'] + GRID.getTitle());
-		GRID.changes=false;
-		GRID.close();
-	}
-
+		saveCellGrid(GRID,M,S,D);
+ 	}
 }
+
+function saveCellGrid(GRID,M,S,D){
+	display(4,"PICNUM="+S['picno'] + " PIC PER WELL " + M['PICPERWELL']+" CH = "+S['channel'] );
+	display(4,"WELL "+S['well']+" PLATE COORDINATES X="+S['Xpos']+" Y="+S['Ypos']+" ( PICNUM "+S['picno']+")");		
+	display(4,"TOTAL CELLS = "+S['TOTALCELLS']+" (COPIED="+S['CELLCOPIED']+")");
+	S['NDROP'] = S['TOTALCELLS']-S['CELLCOPIED'];
+ 	IJ.saveAs(GRID, "Tiff", D + '/' + M['FILENAME'] + "-" + GRID.getTitle());
+	GRID.changes=false;
+	GRID.close();
+}
+
+
 IJSetup();
 
