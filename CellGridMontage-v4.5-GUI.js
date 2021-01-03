@@ -26,8 +26,10 @@ FIELDSEP = ['\t',','];
 BITMODE  = ['8-bit','16-bit'];
 
 PATH2FUNCTIONS = "Functions_CellGridMontage.js";
-load(PATH2FUNCTIONS);
+importClass(Packages.java.io.File);
 if( !File(PATH2FUNCTIONS).exists() ){ ERRORexit("Cell Grid Montage functions are missing..."); }
+load(PATH2FUNCTIONS);
+
 ///----------------------------        MAIN       ----------------------------///
 MONTAGE=initMontageParams();
 
@@ -37,7 +39,7 @@ outdir     = "/media/elusers/users/Tal/elmicro/2020_12_21_chaperone2/1m3u_2/smal
 screenname = "1m3u-2-sel"; 
 gridside   = 4; // number of cells per side of square 
 cellsize   = 65; // pixel size of each cropped cell
-picperwell = 1;
+picperwell = 5;
 delim      = 2; // 1 = tab , 2 = comma
 fsep       = 1; // 1 = linux , 2 = windows
 bitmode    = 1; // 1 = 8-bit , 2 = 16-bit
@@ -103,24 +105,52 @@ getMontageAllParams(MONTAGE); // PRINTING MONTAGE PARAMETERS
 IJ.log(space.repeat(100));
 
 var t0 = new Date().getTime();
+// START GOING OVER EACH CHANNEL ( columns 3-6 in input file)
 for(var ich=0; ich<CHANNELS.length; ich++){
 
 	var t1 = new Date().getTime();
 	var ch = CHANNELS[ich];
 	IJ.log('current channel is '+ch);
-	
+	initRM();
 	var STATUS = initCopyStatus(MONTAGE['pxBORDER'],MONTAGE['pxBORDER']);
 	STATUS['channel'] = ch;
 	
+    // START GOING OVER EACH PICTURE (number of rows in input file)
 	for(var irow=0; irow<INPUT.length && irow <= STOP; irow++){
+		
+		if( irow >= STOP ){ display(3,"/!\\ SHOULD HAVE STOPPED AT iteration = "+STOP+" /!\\ "); }
 
 		var t2 = new Date().getTime();
-		
 		STATUS['LASTROW'] = (irow == INPUT.length-1 || irow == STOP);
 		if(MONTAGE['skipFirstPIC']){ IJ.log("...SKIPPING THE FIRST PICTURE OF THE WELL..."); STATUS['picno']++; continue; }
 	
 		// CHECK IF WELL HAS BEEN VISITED
 		NextWell(STATUS['well'], INPUT[irow]['well'], MONTAGE,STATUS,INPUT[irow]['orf']);
+
+		var IMG = INPUT[irow][ch];
+		if(	!File(IMG).exists() ){ IJ.log("IMAGE FROM CHANNEL "+STATUS['channel']+" IS MISSING (path="+IMG+")");  STATUS['picno']++; continue; }
+
+		// CREATE GRID IMAGE FOR CURRENT WELL
+		if( STATUS['picno'] == 1 ){
+			initRM(RM); // Clear ROI manager
+			var wellname = INPUT[irow]['plate']+"_"+INPUT[irow]['orf']+"_"+INPUT[irow]['well']+"_"+ch ;
+			display(3,'[CREATING CELLGRID] CELLGRID NAME = '+wellname);
+			var CELLGRID = IJ.createImage(wellname,MONTAGE['BITMODE']+" "+MONTAGE['BACKGROUND'],MONTAGE['WELLSIDE'],MONTAGE['WELLSIDE'],1);	
+			IJ.run(CELLGRID, LUT[ich], "");
+			if( CELLGRID !== null){ CELLGRID.show(); }
+			STATUS['CELLGRID']= CELLGRID;
+			STATUS['GRIDNAME']= wellname;
+		}
+
+		// CHECK IF THERE ARE MORE PICTURES TO COPY
+		STATUS['LEFT2COPY'] = Left2copy(STATUS,MONTAGE);
+		STATUS['MAXCOPY'] = (0 > STATUS['LEFT2COPY'] );
+
+ 		if( STATUS['MAXCOPY'] ){	
+ 			display(3,"...Reached maximum number of cells to copy for this well...");
+ 		}else{
+			display(3,"[CHECKING WELL "+STATUS['well']+"] ==> CONTAINS "+STATUS['CELLCOPIED']+" COPIED CELLS. LEFT TO COPY = "+STATUS['LEFT2COPY']); 
+		}
 	
 		display(3,"(1) Get detected cells in segmented image from (channel c0)");
 		// READ IMAGE FILE WITH SEGMENTED CELLS
@@ -160,30 +190,14 @@ for(var ich=0; ich<CHANNELS.length; ich++){
 		STATUS['NKEEP'] = STATUS['NCELLS'] - STATUS['NDROP'];
 		STATUS['TOTALCELLS'] += STATUS['NKEEP'];
 
-		var IMG = INPUT[irow][ch];
-		if(	!IMG.exists ){ IJ.log("IMAGE FROM CHANNEL "+IMG+" IS MISSING"); ipic++; continue; }
-		
-		if( STATUS['picno'] == 1 ){
-			initRM(RM); // Clear ROI manager
-			// Create grid image for current well
-			var wellname = INPUT[irow]['plate']+"_"+INPUT[irow]['orf']+"_"+INPUT[irow]['well']+"_"+ch ;
-			display(1,'==> CELL GRID IMAGE = '+wellname);
-			var CELLGRID = IJ.createImage(wellname,MONTAGE['BITMODE']+" "+MONTAGE['BACKGROUND'],MONTAGE['WELLSIDE'],MONTAGE['WELLSIDE'],1);	
-			IJ.run(CELLGRID, LUT[ich], "");
-			if( CELLGRID !== null){ CELLGRID.show(); }
-		}
 
-		
-		if( CELLS.length == 0 ){ 
-			display(3,"...SKIPPING IMAGE WITH NO CELLS...");
-			STATUS['COPY'] == false;  // STATUS['picno']++; 
-			saveCellGrid(CELLGRID,MONTAGE,STATUS,OUTDIR);
-			continue;
+		if( CELLS.length == 0 ){
+			STATUS['COPY'] = false;
+			display(3,"...IMAGE WITHOUT ANY CELLS...");
 		}
+		
 		makeCellGrid(CELLGRID, IMG, CELLS, MONTAGE, STATUS, OUTDIR);
 
-		
-		
 		if( STATUS['picno'] == MONTAGE['PICPERWELL'] ){
 			IJ.log(equal.repeat(100));
 			FinishedWell(INPUT[irow]['well'],t2);
@@ -192,10 +206,11 @@ for(var ich=0; ich<CHANNELS.length; ich++){
 	
 		while(CELLS.length > 0 ){ CELLS.pop(); }
 		display(2,"PICNUM "+STATUS['picno']+" => NCELLS="+STATUS['NCELLS']+" KEPT="+STATUS['NKEEP'] + " DROPPED="+STATUS['NDROP']);
+		display(2,"(COPIED="+STATUS['CELLCOPIED']+"/"+MONTAGE['CELLPERWELL']+")");
 		STATUS['picno']++;
 		display(3,space.repeat(100));
 	}
-	
+
 	IJ.log(space.repeat(100));
 	IJ.log(sharp.repeat(100));
 	var t4=new Date().getTime();
@@ -205,9 +220,14 @@ for(var ich=0; ich<CHANNELS.length; ich++){
 
 }
 
+
+
 IJ.log(space.repeat(100));
 IJ.log(star.repeat(100));
 var t5=new Date().getTime();
 IJ.log("TOTAL TIME : " + Math.round((t5-t0)/1000) + " sec " );
 IJ.log(star.repeat(100));
 IJ.log(space.repeat(100));
+
+IJ.selectWindow("Log");
+IJ.saveAs("Text", outdir+"/CellGridMontage-v4.5-GUI.log");

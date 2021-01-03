@@ -125,7 +125,7 @@ Array.prototype.filter = function(func, thisArg) {
 
 Object.prototype.keys = function(obj) {
 	'use strict';
-    if (typeof obj !== 'function' && (typeof obj !== 'object' || obj === null)) {
+    if ( ! ((typeof obj === 'Function' || typeof obj === 'function') && this) ){
       throw new TypeError('Object.keys called on non-object');
     }
 
@@ -529,6 +529,7 @@ function initCopyStatus(x0,y0){
 	status['NCELLS'] = 0;
 	status['KEPT']   = 0;
 	status['COPIED'] = 0;
+	status['CELLCOPIED'] = 0;
 	status['xcellgrid']  = 0;
 	status['ycellgrid']  = 0;
 	status['MAXINT'] = 0;
@@ -545,8 +546,10 @@ function NextWell(lastVal, currentVal,M,S,O){
 	if(lastVal !== undefined ){ S['FIRSTWELL'] = false; }
 	if( nextwell ){
 		display(2,dash.repeat(100));
-		display(2,"== Going to next well : "+nextwell+" == ");
-		display(2,"Previous well #"+lastVal+"#");
+		if( S['FIRSTWELL'] == false ){
+			display(2,"== Going to next well : "+nextwell+" == ");
+			display(2,"Previous well #"+lastVal+"#");
+		}
 		display(2,"Current well #"+currentVal+"#");
 		var W = Well2pos(currentVal,M,true);
 		display(2,dash.repeat(100));
@@ -557,18 +560,22 @@ function NextWell(lastVal, currentVal,M,S,O){
 		S['Ypos']  = W['y'];
 		S['well']  = W['name'];
 		S['orf']  = O;
+		S['COPY'] = true;
+		S['MAXCOPY'] = false;
+		S['SAVED'] = false;
 		
 		S['TOTALCELLS'] = 0;
 		S['NCELLS']     = 0;
 		S['NKEEP']      = 0;
-		S['CELLCOPIED'] = 0; 
+		S['CELLCOPIED'] = 0;
+		S['LEFT2COPY']  = M['PICPERWELL'];  
 		S['NDROP']      = 0;
 
 		S['xcellgrid']  = 0;
 		S['ycellgrid']  = 0;
 		nextwell=false;
 	}else{
-		display(3,"[PICNUM = "+S['picno']+"]");
+		display(3,dash.repeat(10)+"[PICNUM = "+S['picno']+"]"+dash.repeat(10));
 	}
 }
 
@@ -688,9 +695,9 @@ function makeCellGrid(GRID,IMG,C,M,S,D){
 	display(3,"(3) Crop and tile cells from current well image to cell grid");
 	var wellLABELS = new Overlay();
 	var cellLABELS = new Overlay();	
-
+	
 	// START COPYING CELLS IN CURRENT CHANNEL
-	if( S['COPY'] && S['CELLCOPIED'] < M['CELLPERWELL'] && S['picno'] <= M['PICPERWELL'] ){
+	if( S['COPY'] && ( !S['MAX_COPY'] && S['picno'] <= M['PICPERWELL'] ) ){
 	  	IMP = IJ.openImage(IMG);
 	  	if(IMP !== null){ 
 	  		IMP.show();
@@ -702,8 +709,8 @@ function makeCellGrid(GRID,IMG,C,M,S,D){
 		IJ.run(IMP, "Subtract Background...", "rolling=50");
 	  	IJ.run(IMP, "Enhance Contrast", "saturated=0.35");
 	  	
-
-  		for( icell=0; icell < C.length && S['COPY'] && S['CELLCOPIED'] < M['CELLPERWELL']; icell++){
+		var LEFT = Left2copy(S,M);
+  		for( icell=0; icell < C.length && S['COPY'] && LEFT > 0 ; icell++){
 		  	//IJ.log("SELECTED CELL INDEX IN PIC "+ipic+" : "+indCellPIC+" (nCells = "+nover+" kept="+nkept+" arrayL = "+CELLS.length+")");
 		  	var stats = C[icell].getStats(IMP,IP);
 		  	if(stats.max > S['MAXINT']){  S['MAXINT']=stats.max; }
@@ -740,12 +747,15 @@ function makeCellGrid(GRID,IMG,C,M,S,D){
 				S['ycellgrid']++;	
 			}
 			S['CELLCOPIED']++;
+			display(2,"NUMBER OF CELLS COPIED = "+S['CELLCOPIED']+"/"+M['CELLPERWELL']+" +++ LEFT2COPY = "+LEFT);
+			LEFT = Left2copy(S,M);
+			
 		}
 	    IMP.changes=false;
 	    IMP.close();
   	}
   	
- 	if( S['picno'] == M['PICPERWELL'] || S['LASTROW']){
+ 	if( S['picno'] == M['PICPERWELL'] || S['LASTROW'] || S['MAXCOPY'] ){
  		addLabel(GRID,M['WELLSIDE'],M['WELLSIDE'],S['well']+"_"+S['orf'],Color.yellow,2);
 		RM.moveRoisToOverlay(GRID);
 		IJ.run("Show Overlay", "");
@@ -755,15 +765,31 @@ function makeCellGrid(GRID,IMG,C,M,S,D){
 }
 
 function saveCellGrid(GRID,M,S,D){
-	display(4,"PICNUM="+S['picno'] + " PIC PER WELL " + M['PICPERWELL']+" CH = "+S['channel'] );
-	display(4,"WELL "+S['well']+" PLATE COORDINATES X="+S['Xpos']+" Y="+S['Ypos']+" ( PICNUM "+S['picno']+")");		
-	display(4,"TOTAL CELLS = "+S['TOTALCELLS']+" (COPIED="+S['CELLCOPIED']+")");
-	S['NDROP'] = S['TOTALCELLS']-S['CELLCOPIED'];
- 	IJ.saveAs(GRID, "Tiff", D + '/' + M['FILENAME'] + "-" + GRID.getTitle());
-	GRID.changes=false;
-	GRID.close();
+	underscore="_";
+	if(S['SAVED'] == false){
+		var FINALNAME = M['FILENAME'] + "-" + GRID.getTitle();
+		display(2,underscore.repeat(20));
+		display(4,"[SAVING CELL GRID] FILENAME IS "+FINALNAME);
+		display(4,"PICNUM="+S['picno'] + " PIC PER WELL " + M['PICPERWELL']+" CH = "+S['channel'] );
+		display(4,"WELL "+S['well']+" PLATE COORDINATES X="+S['Xpos']+" Y="+S['Ypos']+" ( PICNUM "+S['picno']+")");		
+		display(4,"TOTAL CELLS = "+S['TOTALCELLS']+" (COPIED="+S['CELLCOPIED']+")");
+		S['NDROP'] = S['TOTALCELLS']-S['CELLCOPIED'];
+	 	IJ.saveAs(GRID, "Tiff", D + '/' + FINALNAME);
+		GRID.changes=false;
+		S['picno']=1; S['SAVED'] = true;
+		GRID.close();
+		display(2,underscore.repeat(20));
+		display(2,space.repeat(100));
+	}else{
+		display(4,"[SAVING CELL GRID] /!\\ THIS CELL GRID SHOULD HAVE BEEN SAVED ALREADY /!\\ ");
+	}
 }
 
+function Left2copy (S,M){
+	var LEFT = M['CELLPERWELL'] - S['CELLCOPIED'];
+	if( LEFT <= 0 ){ S['MAXCOPY']=false; S['COPY']=false; }
+	return( LEFT )
+}
 
 IJSetup();
 
