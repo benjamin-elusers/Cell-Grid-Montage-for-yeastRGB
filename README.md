@@ -1,4 +1,7 @@
 # Cell-Grid-Montage
+
+![Cell](Cell-grid-montage.png)
+
 This Javascript can only work when called by imageJ/Fiji.
 The GUI version must be run within the Fiji script editor.
 The CLI version must be run with xvfb-run in a terminal session.
